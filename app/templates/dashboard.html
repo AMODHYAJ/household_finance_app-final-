@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+        <hr>
+    </div>
+</div>
+
+{% if show_welcome %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h4>Welcome to Household Finance AI Platform!</h4>
+            <p>Get started by adding your first transaction to see insights and charts.</p>
+            <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-primary">
+                <i class="fas fa-plus-circle"></i> Add Your First Transaction
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Metrics Cards -->
+<div class="row">
+    <div class="col-md-3">
+        <div class="metric-card text-center">
+            <h5>Total Income</h5>
+            <h3 class="text-success">${{ "%.2f"|format(metrics.total_income) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card text-center">
+            <h5>Total Expenses</h5>
+            <h3 class="text-danger">${{ "%.2f"|format(metrics.total_expense) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card text-center">
+            <h5>Net Savings</h5>
+            <h3 class="text-primary">${{ "%.2f"|format(metrics.savings) }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="metric-card text-center">
+            <h5>Savings Rate</h5>
+            <h3 class="text-info">{{ "%.1f"|format(metrics.savings_rate) }}%</h3>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Transactions</h5>
+                <a href="{{ url_for('transactions.view_transactions') }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    <span class="badge {% if transaction.t_type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ transaction.t_type.title() }}
+                                    </span>
+                                </td>
+                                <td>{{ transaction.category }}</td>
+                                <td>${{ "%.2f"|format(transaction.amount) }}</td>
+                                <td>{{ transaction.note or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No transactions found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-primary w-100">
+                            <i class="fas fa-plus-circle"></i> Add Transaction
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('charts.charts_page') }}" class="btn btn-info w-100">
+                            <i class="fas fa-chart-bar"></i> View Charts
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('insights.insights_page') }}" class="btn btn-success w-100">
+                            <i class="fas fa-lightbulb"></i> AI Insights
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{{ url_for('transactions.view_transactions') }}" class="btn btn-secondary w-100">
+                            <i class="fas fa-list"></i> All Transactions
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

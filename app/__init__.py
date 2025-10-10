@@ -1,0 +1,63 @@
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager
+from flask_bcrypt import Bcrypt
+import os
+
+# Initialize extensions
+db = SQLAlchemy()
+bcrypt = Bcrypt()
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'info'
+
+def create_app():
+    app = Flask(__name__)
+    
+    # Configuration
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///finance.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Initialize extensions with app
+    db.init_app(app)
+    bcrypt.init_app(app)
+    login_manager.init_app(app)
+    
+    # Import models here to avoid circular imports
+    from core.database import User
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
+    # Import and register blueprints
+    from app.routes.auth import auth_bp
+    from app.routes.transactions import transactions_bp
+    from app.routes.charts import charts_bp
+    from app.routes.insights import insights_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(transactions_bp)
+    app.register_blueprint(charts_bp)
+    app.register_blueprint(insights_bp)
+    
+    # Create tables
+    with app.app_context():
+        db.create_all()
+        
+        # Initialize simplified agents
+        try:
+            from agents.architect_agent import ArchitectAgent
+            app.architect_agent = ArchitectAgent()
+        except Exception as e:
+            print(f"Warning: Could not initialize agents: {e}")
+            # Fallback mock agent
+            class MockArchitectAgent:
+                def __init__(self):
+                    self.data_agent = None
+                    self.chart_agent = None
+                    self.insight_agent = None
+            app.architect_agent = MockArchitectAgent()
+
+    return app

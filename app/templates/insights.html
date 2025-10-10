@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-lightbulb"></i> AI Insights</h2>
+        <hr>
+    </div>
+</div>
+
+{% if error %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-danger">
+            <h4>Error Generating Insights</h4>
+            <p>{{ error }}</p>
+        </div>
+    </div>
+</div>
+{% elif no_data %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h4>No Data Available</h4>
+            <p>Start by adding some transactions to get AI-powered insights about your finances.</p>
+            <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-primary">
+                Add Your First Transaction
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Responsible AI Section -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-shield-alt"></i> Responsible AI Checks</h5>
+            </div>
+            <div class="card-body">
+                {% if insights.responsible_ai %}
+                    {% for check in insights.responsible_ai %}
+                    <div class="alert alert-info">
+                        {{ check }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No Responsible AI checks available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Financial Summary</h5>
+            </div>
+            <div class="card-body">
+                {% if insights.summary_stats and insights.summary_stats.income is defined %}
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h6>Total Income</h6>
+                            <h4 class="text-success">${{ "%.2f"|format(insights.summary_stats.income) }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h6>Total Expenses</h6>
+                            <h4 class="text-danger">${{ "%.2f"|format(insights.summary_stats.expense) }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h6>Net Savings</h6>
+                            <h4 class="text-primary">${{ "%.2f"|format(insights.summary_stats.savings) }}</h4>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card text-center">
+                            <h6>Savings Rate</h6>
+                            <h4 class="text-info">{{ "%.1f"|format(insights.summary_stats.savings_rate) }}%</h4>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No summary statistics available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trend Insights -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trending-up"></i> Trend Analysis</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ insights.trend or "No trend analysis available." }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts -->
+{% if insights.alerts and insights.alerts|length > 0 %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bell"></i> Alerts</h5>
+            </div>
+            <div class="card-body">
+                {% for alert in insights.alerts %}
+                <div class="alert alert-warning">
+                    {{ alert }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Budget Recommendations -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-piggy-bank"></i> Budget Recommendations</h5>
+            </div>
+            <div class="card-body">
+                {% if insights.budget_recommendations and insights.budget_recommendations|length > 0 %}
+                    {% for recommendation in insights.budget_recommendations %}
+                    <div class="alert alert-success">
+                        {{ recommendation }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No budget recommendations available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,12 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+Flask-Bcrypt
+WTForms
+pandas
+plotly
+scikit-learn
+bcrypt
+cryptography
+python-dotenv

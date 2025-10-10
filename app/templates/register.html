@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-user-plus"></i> Register</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="">
+                    {{ form.hidden_tag() }}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control") }}
+                                {% if form.username.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.username.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.role.label(class="form-label") }}
+                                {{ form.role(class="form-control") }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                {{ form.password(class="form-control") }}
+                                {% if form.password.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.password.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.confirm_password.label(class="form-label") }}
+                                {{ form.confirm_password(class="form-control") }}
+                                {% if form.confirm_password.errors %}
+                                    <div class="text-danger">
+                                        {% for error in form.confirm_password.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.create_household(class="form-check-input") }}
+                        {{ form.create_household.label(class="form-check-label") }}
+                    </div>
+                    
+                    <div id="household-fields">
+                        <div class="mb-3">
+                            {{ form.household_name.label(class="form-label") }}
+                            {{ form.household_name(class="form-control") }}
+                        </div>
+                    </div>
+                    
+                    <div id="existing-household" class="mb-3">
+                        {{ form.household_id.label(class="form-label") }}
+                        {{ form.household_id(class="form-control") }}
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+                <div class="text-center mt-3">
+                    <small>
+                        Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createHouseholdCheckbox = document.getElementById('{{ form.create_household.id }}');
+    const householdFields = document.getElementById('household-fields');
+    const existingHousehold = document.getElementById('existing-household');
+    
+    function toggleHouseholdFields() {
+        if (createHouseholdCheckbox.checked) {
+            householdFields.style.display = 'block';
+            existingHousehold.style.display = 'none';
+        } else {
+            householdFields.style.display = 'none';
+            existingHousehold.style.display = 'block';
+        }
+    }
+    
+    createHouseholdCheckbox.addEventListener('change', toggleHouseholdFields);
+    toggleHouseholdFields(); // Initial state
+});
+</script>
+{% endblock %}
