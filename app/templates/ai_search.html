@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-search"></i> AI-Powered Transaction Search</h2>
+        <p class="text-muted">Ask questions in natural language like "when did I eat pizza" or "show me food expenses"</p>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Natural Language Search</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="searchQuery" 
+                           placeholder='Try: "when did I eat pizza" or "food expenses last week" or "transactions over $50"'>
+                    <small class="text-muted">Ask questions about your spending habits and patterns</small>
+                </div>
+                <button class="btn btn-primary" onclick="performSearch()">
+                    <i class="fas fa-search"></i> Search with AI
+                </button>
+                
+                <div id="searchResults" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Search Examples</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('when did I eat pizza')">
+                        <i class="fas fa-pizza-slice"></i> "when did I eat pizza"
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('food expenses this week')">
+                        <i class="fas fa-utensils"></i> "food expenses this week"
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('transactions over $100')">
+                        <i class="fas fa-money-bill-wave"></i> "transactions over $100"
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('shopping last month')">
+                        <i class="fas fa-shopping-cart"></i> "shopping last month"
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('uber rides')">
+                        <i class="fas fa-car"></i> "uber rides"
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action" onclick="setExample('netflix subscription')">
+                        <i class="fas fa-tv"></i> "netflix subscription"
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">How It Works</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>AI Search understands natural language:</strong></p>
+                <ul>
+                    <li><strong>Questions:</strong> "when did I...", "how much did I spend on..."</li>
+                    <li><strong>Time periods:</strong> "today", "last week", "this month"</li>
+                    <li><strong>Categories:</strong> "food", "shopping", "entertainment"</li>
+                    <li><strong>Amounts:</strong> "over $50", "less than $100"</li>
+                    <li><strong>Specific items:</strong> "pizza", "uber", "netflix"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function setExample(example) {
+    document.getElementById('searchQuery').value = example;
+}
+
+function performSearch() {
+    const query = document.getElementById('searchQuery').value.trim();
+    if (!query) {
+        alert('Please enter a search query');
+        return;
+    }
+    
+    const resultsDiv = document.getElementById('searchResults');
+    resultsDiv.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p>AI is analyzing your question...</p></div>';
+    
+    fetch('{{ url_for("transactions.search_transactions") }}?q=' + encodeURIComponent(query))
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            let html = '';
+            
+            if (data.results.length > 0) {
+                // Group by date for better organization
+                const groupedByDate = {};
+                data.results.forEach(transaction => {
+                    if (!groupedByDate[transaction.date]) {
+                        groupedByDate[transaction.date] = [];
+                    }
+                    groupedByDate[transaction.date].push(transaction);
+                });
+                
+                html = `
+                    <div class="alert alert-success">
+                        <strong>Found ${data.results.length} relevant transactions</strong><br>
+                        <small>For: "${query}"</small>
+                    </div>
+                `;
+                
+                // Show most relevant matches first
+                Object.keys(groupedByDate).sort().reverse().forEach(date => {
+                    html += `
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-calendar"></i> ${date}</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                        <th>AI Insight</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+                    
+                    groupedByDate[date].forEach(transaction => {
+                        const rowClass = transaction.anomaly ? 'table-warning' : 
+                                       (transaction.type.toLowerCase() === 'income' ? 'table-success' : '');
+                        
+                        html += `
+                            <tr class="${rowClass}">
+                                <td>
+                                    <span class="badge ${transaction.type === 'Income' ? 'bg-success' : 'bg-danger'}">
+                                        ${transaction.type}
+                                    </span>
+                                </td>
+                                <td>${transaction.category}</td>
+                                <td><strong>$${transaction.amount.toFixed(2)}</strong></td>
+                                <td>${transaction.note}</td>
+                                <td><small class="text-muted">${transaction.ai_insight}</small></td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `</tbody></table></div></div>`;
+                });
+            } else {
+                html = `
+                    <div class="alert alert-warning text-center">
+                        <i class="fas fa-search fa-2x mb-3"></i>
+                        <h5>No transactions found</h5>
+                        <p>No transactions match your search: "${query}"</p>
+                        <p class="text-muted">Try different keywords or time periods</p>
+                    </div>
+                `;
+            }
+            
+            resultsDiv.innerHTML = html;
+        })
+        .catch(error => {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">Search failed: ${error}</div>`;
+        });
+}
+
+// Enable Enter key search
+document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        performSearch();
+    }
+});
+</script>
+{% endblock %}

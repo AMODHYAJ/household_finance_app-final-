@@ -1,9 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SelectField, \
                    DateField, FloatField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Length, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Length, EqualTo, ValidationError, Optional, NumberRange
 from app import db
 from core.database import User
+from flask_wtf.file import FileField, FileAllowed
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -30,11 +31,44 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That username is taken. Please choose a different one.')
 
 class TransactionForm(FlaskForm):
+    # Transaction type with proper choices
     t_type = SelectField('Type', 
-                        choices=[('income', 'Income'), ('expense', 'Expense')],
+                        choices=[('Income', 'Income'), ('Expense', 'Expense')],
                         validators=[DataRequired()])
-    category = StringField('Category', validators=[DataRequired()])
-    amount = FloatField('Amount', validators=[DataRequired()])
+    
+    # Category field - can be empty for auto-categorization
+    category = StringField('Category', validators=[Optional()])
+    
+    # Amount with proper validation
+    amount = FloatField('Amount', validators=[DataRequired(), NumberRange(min=0.01)])
+    
+    # Date field
     date = DateField('Date', validators=[DataRequired()])
-    note = TextAreaField('Note')
+    
+    # Note field - optional
+    note = TextAreaField('Note', validators=[Optional()])
+    
+    # Receipt upload field
+    receipt = FileField('Upload Receipt', validators=[
+        FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 'Images or PDFs only!')
+    ])
+    
     submit = SubmitField('Add Transaction')
+    
+    def validate_amount(self, amount):
+        """Custom amount validation"""
+        if amount.data <= 0:
+            raise ValidationError('Amount must be greater than 0.')
+        if amount.data > 1000000:
+            raise ValidationError('Amount seems unusually high. Please verify.')
+
+# Additional form for search/filtering if needed
+class SearchForm(FlaskForm):
+    query = StringField('Search', validators=[Optional()])
+    category = SelectField('Category', choices=[], validators=[Optional()])
+    t_type = SelectField('Type', 
+                        choices=[('', 'All'), ('Income', 'Income'), ('Expense', 'Expense')],
+                        validators=[Optional()])
+    date_from = DateField('From Date', validators=[Optional()])
+    date_to = DateField('To Date', validators=[Optional()])
+    submit = SubmitField('Search')

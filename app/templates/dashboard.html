@@ -131,5 +131,182 @@
         </div>
     </div>
 </div>
+<!-- Add this section to dashboard.html -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-eye"></i> Feature Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Recent AI Categorizations:</h6>
+                        <div id="ai-activity">
+                            <p class="text-muted">Add transactions with empty categories to see AI in action</p>
+                        </div>
+                        <a href="/add-test-data" class="btn btn-sm btn-outline-primary mt-2">
+                            <i class="fas fa-vial"></i> Add Test Data
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Active Features Right Now:</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <i class="fas fa-shield-alt text-success"></i>
+                                Security: Input sanitization on every form
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-robot text-success"></i>
+                                NLP: Entity extraction from transaction notes
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-brain text-success"></i>
+                                Gemini AI: Ready for categorization (when category empty)
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-chart-line text-success"></i>
+                                Predictive Analytics: Analyzing expense patterns
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add this section to your dashboard.html -->
+<!-- Replace your current feature status section with this -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-check-circle"></i> Feature Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="feature-status">
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>NLP Processing</h6>
+                                <div id="nlp-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> Working
+                                </div>
+                                <small class="text-muted">spaCy entity extraction</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>LLM Integration</h6>
+                                <div id="llm-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> Working
+                                </div>
+                                <small class="text-muted">Gemini AI categorization</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Real Dataset</h6>
+                                <div id="dataset-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> 10,000 records
+                                </div>
+                                <small class="text-muted">Household income data</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Security Features</h6>
+                                <div id="security-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> Active
+                                </div>
+                                <small class="text-muted">Encryption & validation</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Agent Communication</h6>
+                                <div id="mcp-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> Online
+                                </div>
+                                <small class="text-muted">MCP protocol</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6>Predictive Analytics</h6>
+                                <div id="analytics-status" class="text-success">
+                                    <i class="fas fa-check-circle"></i> Available
+                                </div>
+                                <small class="text-muted">AI-powered insights</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Manual Refresh Button -->
+                <div class="text-center mt-3">
+                    <button onclick="checkFeatureStatus()" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh Status
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 {% endblock %}
+
+// Add this to your dashboard.html or base.html
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    checkFeatureStatus();
+});
+
+function checkFeatureStatus() {
+    fetch('/api/feature-status')
+        .then(response => response.json())
+        .then(data => {
+            updateFeatureStatus('nlp', data.nlp);
+            updateFeatureStatus('llm', data.llm);
+            updateFeatureStatus('dataset', data.dataset);
+            updateFeatureStatus('security', data.security);
+            updateFeatureStatus('mcp', data.mcp);
+            updateFeatureStatus('analytics', data.analytics);
+        })
+        .catch(error => {
+            console.error('Error fetching feature status:', error);
+            // Set all to error state
+            const features = ['nlp', 'llm', 'dataset', 'security', 'mcp', 'analytics'];
+            features.forEach(feature => {
+                updateFeatureStatus(feature, {working: false, status: 'Error', details: 'Failed to check'});
+            });
+        });
+}
+
+function updateFeatureStatus(featureId, status) {
+    const element = document.getElementById(`${featureId}-status`);
+    if (!element) return;
+    
+    if (status.working) {
+        element.innerHTML = `<i class="fas fa-check-circle text-success"></i> ${status.status}`;
+        element.className = 'text-success';
+    } else {
+        element.innerHTML = `<i class="fas fa-times-circle text-danger"></i> ${status.status}`;
+        element.className = 'text-danger';
+    }
+    
+    // Add tooltip with details
+    element.title = status.details;
+}
+</script>

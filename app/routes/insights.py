@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, jsonify, current_app
 from flask_login import login_required, current_user
 from core.database import Transaction
 import logging
+import pandas as pd
 
 insights_bp = Blueprint('insights', __name__)
 
@@ -55,3 +56,57 @@ def insights_data():
         return jsonify(insights)
     except Exception as e:
         return jsonify({'error': str(e)})
+    
+# Add this to your app/routes/insights.py
+@insights_bp.route('/test-dataset')
+@login_required
+def test_dataset():
+    try:
+        from data_loader import RealDatasetLoader
+        loader = RealDatasetLoader()
+        transactions = loader.load_and_preprocess()
+        
+        return jsonify({
+            'dataset_loaded': True,
+            'transaction_count': len(transactions),
+            'sample_transactions': transactions[:3]  # Show first 3
+        })
+    except Exception as e:
+        return jsonify({
+            'dataset_loaded': False,
+            'error': str(e)
+        })
+    
+@insights_bp.route('/responsible-ai')
+@login_required
+def responsible_ai_dashboard():
+    """Responsible AI monitoring dashboard"""
+    from agents.responsible_ai import ResponsibleAIAuditor
+    from core.database import Transaction
+    
+    transactions = Transaction.query.filter_by(user_id=current_user.id).all()
+    
+    if not transactions:
+        return render_template('responsible_ai.html', 
+                             title='Responsible AI Dashboard',
+                             audit_report=None,
+                             no_data=True)
+    
+    # Convert to DataFrame
+    df = pd.DataFrame([{
+        'date': t.date,
+        'type': t.t_type,
+        'category': t.category,
+        'amount': t.amount,
+        'note': t.note or ''
+    } for t in transactions])
+    
+    # Run Responsible AI audit
+    auditor = ResponsibleAIAuditor()
+    ai_categories = df['category'].tolist()
+    audit_report = auditor.audit_ai_decisions(df.to_dict('records'), ai_categories)
+    
+    return render_template('responsible_ai.html',
+                         title='Responsible AI Dashboard',
+                         audit_report=audit_report,
+                         no_data=False)

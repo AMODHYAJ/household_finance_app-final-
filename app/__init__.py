@@ -36,11 +36,19 @@ def create_app():
     from app.routes.transactions import transactions_bp
     from app.routes.charts import charts_bp
     from app.routes.insights import insights_bp
+    from app.routes.budget import budget_bp
+    from app.routes.export import export_bp
+    from app.routes.mcp_api import mcp_bp
+    from app.routes.debug import debug_bp  # NEW: Add debug blueprint
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(charts_bp)
     app.register_blueprint(insights_bp)
+    app.register_blueprint(budget_bp)
+    app.register_blueprint(export_bp)
+    app.register_blueprint(mcp_bp)
+    app.register_blueprint(debug_bp)  # NEW: Register debug blueprint
     
     # Create tables
     with app.app_context():
@@ -52,12 +60,12 @@ def create_app():
             app.architect_agent = ArchitectAgent()
         except Exception as e:
             print(f"Warning: Could not initialize agents: {e}")
-            # Fallback mock agent
+            # Create a simple mock agent
             class MockArchitectAgent:
-                def __init__(self):
-                    self.data_agent = None
-                    self.chart_agent = None
-                    self.insight_agent = None
+                def trigger_chart_generation(self, user_id):
+                    print(f"Mock: Trigger chart generation for user {user_id}")
+                def trigger_insight_generation(self, user_id):
+                    print(f"Mock: Trigger insight generation for user {user_id}")
             app.architect_agent = MockArchitectAgent()
 
     return app

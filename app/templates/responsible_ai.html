@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-shield-alt"></i> Responsible AI Dashboard</h2>
+        <p class="text-muted">Monitoring AI fairness, transparency, and ethics</p>
+        <hr>
+    </div>
+</div>
+
+{% if no_data %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h4>No Data Available</h4>
+            <p>Add some transactions to see Responsible AI monitoring.</p>
+            <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-primary">
+                Add Your First Transaction
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+<!-- Audit Summary -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-clipboard-check"></i> AI Ethics Audit Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h3>{{ audit_report.fairness_checks | length }}</h3>
+                            <p class="mb-0">Fairness Checks</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h3>{{ audit_report.bias_detection | length }}</h3>
+                            <p class="mb-0">Bias Checks</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h3>{{ audit_report.privacy_checks | length }}</h3>
+                            <p class="mb-0">Privacy Checks</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="border rounded p-3">
+                            <h3>{{ audit_report.recommendations | length }}</h3>
+                            <p class="mb-0">Recommendations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fairness Monitoring -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-balance-scale"></i> Fairness Monitoring</h5>
+            </div>
+            <div class="card-body">
+                {% for check in audit_report.fairness_checks %}
+                <div class="alert {% if '⚠️' in check %}alert-warning{% else %}alert-success{% endif %}">
+                    {{ check }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-search"></i> Bias Detection</h5>
+            </div>
+            <div class="card-body">
+                {% for check in audit_report.bias_detection %}
+                <div class="alert {% if '⚠️' in check %}alert-warning{% else %}alert-info{% endif %}">
+                    {{ check }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transparency & Privacy -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Transparency Metrics</h5>
+            </div>
+            <div class="card-body">
+                {% for metric in audit_report.transparency_metrics %}
+                <div class="alert alert-info">
+                    {{ metric }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lock"></i> Privacy & Security</h5>
+            </div>
+            <div class="card-body">
+                {% for check in audit_report.privacy_checks %}
+                <div class="alert {% if '⚠️' in check %}alert-warning{% else %}alert-success{% endif %}">
+                    {{ check }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recommendations -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> AI Improvement Recommendations</h5>
+            </div>
+            <div class="card-body">
+                {% for recommendation in audit_report.recommendations %}
+                <div class="alert alert-primary">
+                    <i class="fas fa-bullseye"></i> {{ recommendation }}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Audit Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Audit Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Audit Timestamp:</strong> {{ audit_report.timestamp }}</p>
+                <p class="text-muted">This Responsible AI audit ensures your financial AI operates fairly, 
+                transparently, and ethically. Regular monitoring helps maintain trust in AI decisions.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

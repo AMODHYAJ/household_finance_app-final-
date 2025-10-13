@@ -8,16 +8,7 @@
     </div>
 </div>
 
-{% if error %}
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-danger">
-            <h4>Error Generating Insights</h4>
-            <p>{{ error }}</p>
-        </div>
-    </div>
-</div>
-{% elif no_data %}
+{% if no_data %}
 <div class="row">
     <div class="col-12">
         <div class="alert alert-info">
@@ -30,6 +21,112 @@
     </div>
 </div>
 {% else %}
+<!-- Financial Health Score -->
+{% if insights.financial_health %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-heartbeat"></i> Financial Health Score</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-3 text-center">
+                        <div class="financial-score" id="financialScore" data-score="{{ insights.financial_health.score }}">
+                            <h1 class="display-4 mb-0">{{ insights.financial_health.score }}/100</h1>
+                            <p class="lead">{{ insights.financial_health.message }}</p>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="metric-card text-center">
+                                    <h6>Savings Rate</h6>
+                                    <h4 class="text-info">{{ insights.financial_health.breakdown.savings_rate }}%</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card text-center">
+                                    <h6>Expense Categories</h6>
+                                    <h4 class="text-success">{{ insights.financial_health.breakdown.expense_categories }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card text-center">
+                                    <h6>Total Transactions</h6>
+                                    <h4 class="text-primary">{{ insights.financial_health.breakdown.transaction_count }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Predictive Analytics -->
+{% if insights.predictive_analytics %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-crystal-ball"></i> Predictive Analytics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Monthly Forecast -->
+                    {% if insights.predictive_analytics.monthly_forecast and insights.predictive_analytics.monthly_forecast.next_month_forecast %}
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-chart-line"></i> Next Month Forecast</h6>
+                            <p class="mb-1"><strong>${{ "%.2f"|format(insights.predictive_analytics.monthly_forecast.next_month_forecast) }}</strong></p>
+                            <small class="text-muted">
+                                Confidence: {{ insights.predictive_analytics.monthly_forecast.confidence }}<br>
+                                Based on: {{ insights.predictive_analytics.monthly_forecast.based_on }}<br>
+                                Trend: {{ insights.predictive_analytics.monthly_forecast.trend }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Savings Projection -->
+                    {% if insights.predictive_analytics.savings_projection and insights.predictive_analytics.savings_projection.average_monthly_savings %}
+                    <div class="col-md-6">
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-piggy-bank"></i> Savings Projection</h6>
+                            <p class="mb-1"><strong>${{ "%.2f"|format(insights.predictive_analytics.savings_projection.average_monthly_savings) }}/month</strong></p>
+                            <small class="text-muted">
+                                Annual: ${{ "%.2f"|format(insights.predictive_analytics.savings_projection.projected_annual_savings) }}<br>
+                                Goal in: {{ insights.predictive_analytics.savings_projection.months_to_goal }} months<br>
+                                Progress: {{ "%.1f"|format(insights.predictive_analytics.savings_projection.progress_percentage) }}%
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Spending Anomalies -->
+                {% if insights.predictive_analytics.spending_anomalies and insights.predictive_analytics.spending_anomalies|length > 0 %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Unusual Spending Detected</h6>
+                        {% for anomaly in insights.predictive_analytics.spending_anomalies %}
+                        <div class="alert alert-warning">
+                            <strong>{{ anomaly.date }}</strong>: {{ anomaly.message }}<br>
+                            <small>Amount: ${{ "%.2f"|format(anomaly.amount) }} | Z-score: {{ anomaly.z_score }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Responsible AI Section -->
 <div class="row">
     <div class="col-12">
@@ -151,4 +248,29 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Set financial score color based on score value
+document.addEventListener('DOMContentLoaded', function() {
+    const financialScoreElement = document.getElementById('financialScore');
+    if (financialScoreElement) {
+        const score = parseInt(financialScoreElement.getAttribute('data-score'));
+        let color;
+        
+        if (score >= 80) {
+            color = '#28a745'; // Green
+        } else if (score >= 60) {
+            color = '#ffc107'; // Yellow
+        } else if (score >= 40) {
+            color = '#fd7e14'; // Orange
+        } else {
+            color = '#dc3545'; // Red
+        }
+        
+        financialScoreElement.style.color = color;
+    }
+});
+</script>
 {% endblock %}

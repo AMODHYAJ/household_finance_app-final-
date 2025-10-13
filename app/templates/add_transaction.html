@@ -8,7 +8,12 @@
                 <h4 class="mb-0"><i class="fas fa-plus-circle"></i> Add Transaction</h4>
             </div>
             <div class="card-body">
-                <form method="POST" action="">
+                <div class="alert alert-info">
+                    <i class="fas fa-robot"></i> 
+                    <strong>AI Assistant:</strong> Leave category empty for automatic AI categorization!
+                </div>
+                
+                <form method="POST" action="" enctype="multipart/form-data">
                     {{ form.hidden_tag() }}
                     <div class="row">
                         <div class="col-md-6">
@@ -27,7 +32,8 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 {{ form.category.label(class="form-label") }}
-                                {{ form.category(class="form-control") }}
+                                {{ form.category(class="form-control", placeholder="Leave empty for AI categorization") }}
+                                <small class="text-muted">Optional - AI will automatically categorize based on your note</small>
                                 {% if form.category.errors %}
                                     <div class="text-danger">
                                         {% for error in form.category.errors %}
@@ -66,9 +72,23 @@
                             </div>
                         </div>
                     </div>
+                    
+                    <!-- OCR Receipt Upload -->
+                    <div class="mb-3">
+                        <label for="receipt" class="form-label">
+                            <i class="fas fa-receipt"></i> Upload Receipt (Optional)
+                        </label>
+                        <input type="file" class="form-control" id="receipt" name="receipt" 
+                               accept=".jpg,.jpeg,.png,.pdf">
+                        <div id="fileHelp" class="form-text">
+                            Upload a receipt to automatically fill in amount, date, and category
+                        </div>
+                    </div>
+                    
                     <div class="mb-3">
                         {{ form.note.label(class="form-label") }}
-                        {{ form.note(class="form-control", rows=3) }}
+                        {{ form.note(class="form-control", rows=3, placeholder="Describe your transaction for better AI categorization") }}
+                        <small class="text-muted">The more details you provide, the better AI can categorize</small>
                         {% if form.note.errors %}
                             <div class="text-danger">
                                 {% for error in form.note.errors %}
@@ -78,11 +98,186 @@
                         {% endif %}
                     </div>
                     <div class="d-grid">
-                        {{ form.submit(class="btn btn-success") }}
+                        {{ form.submit(class="btn btn-success", id="submitBtn") }}
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Use specific Plotly version instead of latest -->
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('receipt');
+    const fileHelp = document.getElementById('fileHelp');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (!fileInput || !fileHelp || !submitBtn) {
+        console.error('Required elements not found');
+        return;
+    }
+
+    fileInput.addEventListener('change', function() {
+        const file = fileInput.files[0];
+        
+        if (!file) return;
+        
+        console.log("📁 File selected:", file.name, "Size:", file.size, "Type:", file.type);
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a JPEG, PNG, or PDF file.');
+            fileInput.value = '';
+            return;
+        }
+        
+        // Validate file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('File size too large. Please select a file smaller than 5MB.');
+            fileInput.value = '';
+            return;
+        }
+        
+        const formData = new FormData();
+        formData.append('receipt', file);
+
+        // Show loading state
+        const originalText = fileHelp.innerHTML;
+        fileHelp.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning receipt... (This may take 10-30 seconds)';
+        fileHelp.style.color = '#0d6efd';
+
+        // Disable form submission during processing
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing OCR...';
+
+        console.log("🚀 Starting OCR request...");
+        
+        fetch('{{ url_for("transactions.ocr_upload") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            console.log("📨 Received response:", response.status);
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log("✅ OCR response data:", data);
+            
+            // Reset loading state
+            fileHelp.innerHTML = originalText;
+            fileHelp.style.color = '';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+
+            if (data.error) {
+                showAlert('OCR Error: ' + data.error, 'danger');
+                return;
+            }
+
+            if (!data.success) {
+                showAlert('Could not extract information from receipt. Please fill manually.', 'warning');
+                return;
+            }
+
+            // Auto-fill form fields
+            let filledFields = 0;
+            
+            // Get form field IDs safely
+            const amountField = document.getElementById('{{ form.amount.id }}');
+            const dateField = document.getElementById('{{ form.date.id }}');
+            const noteField = document.getElementById('{{ form.note.id }}');
+            const categoryField = document.getElementById('{{ form.category.id }}');
+            const typeField = document.getElementById('{{ form.t_type.id }}');
+            
+            if (data.amount && data.amount > 0 && amountField) {
+                amountField.value = data.amount;
+                filledFields++;
+            }
+            if (data.date && dateField) {
+                dateField.value = data.date;
+                filledFields++;
+            }
+            if (data.note && noteField) {
+                noteField.value = data.note;
+                filledFields++;
+            }
+            if (data.category && categoryField) {
+                categoryField.value = data.category;
+                filledFields++;
+            }
+            if (data.t_type && typeField) {
+                typeField.value = data.t_type;
+                filledFields++;
+            }
+            
+            console.log(`✅ Auto-filled ${filledFields} form fields`);
+            
+            // Show success message
+            const message = data.message || `Receipt scanned successfully! Auto-filled ${filledFields} fields.`;
+            showAlert(message, 'success');
+        })
+        .catch(err => {
+            console.error('❌ OCR Error:', err);
+            
+            // Reset loading state
+            fileHelp.innerHTML = originalText;
+            fileHelp.style.color = '';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+            
+            showAlert('Failed to process receipt: ' + err.message, 'danger');
+        });
+    });
+
+    function showAlert(message, type) {
+        // Remove existing alerts
+        const existingAlerts = document.querySelectorAll('.alert-dismissible');
+        existingAlerts.forEach(alert => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        });
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+        alertDiv.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i> 
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insert after the form
+        const form = document.querySelector('form');
+        if (form && form.parentNode) {
+            form.parentNode.insertBefore(alertDiv, form.nextSibling);
+        } else {
+            // Fallback: append to card body
+            const cardBody = document.querySelector('.card-body');
+            if (cardBody) {
+                cardBody.appendChild(alertDiv);
+            }
+        }
+        
+        // Auto-dismiss after 8 seconds for success messages
+        if (type === 'success') {
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 8000);
+        }
+    }
+});
+</script>
 {% endblock %}
