@@ -15,7 +15,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default="user")  # 'admin' or 'user'
+    role = db.Column(db.String(20), nullable=False, default="user")
     household_id = db.Column(db.Integer, db.ForeignKey("households.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -29,7 +29,7 @@ class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    t_type = db.Column(db.String(20), nullable=False)  # "income" or "expense"
+    type = db.Column(db.String(20), nullable=False)  # ✅ This should be 'type' not 't_type'
     category = db.Column(db.String(100), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
@@ -39,4 +39,4 @@ class Transaction(db.Model):
     user = db.relationship("User", back_populates="transactions")
     
     def __repr__(self):
-        return f'<Transaction {self.id} {self.t_type} {self.amount}>'
+        return f'<Transaction {self.id} {self.type} {self.amount}>'

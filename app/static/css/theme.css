@@ -1,0 +1,43 @@
+/* Green Gold Theme - Nature & Wealth */
+:root {
+  /* Core Colors */
+  --primary: #059669;      /* Forest Green */
+  --secondary: #10b981;    /* Emerald Green */
+  --success: #22c55e;      /* Success Green */
+  --warning: #eab308;      /* Rich Gold */
+  --danger: #dc2626;       /* Crimson */
+  --accent: #facc15;       /* Bright Gold */
+  
+  /* Financial Semantics */
+  --finance-income: var(--warning);     /* Gold - Income */
+  --finance-expense: var(--danger);     /* Crimson - Expenses */
+  --finance-savings: #0d9488;          /* Teal - Savings */
+  --finance-investment: var(--primary); /* Forest Green - Investment */
+  
+  /* UI Colors - Dark Theme */
+  --ui-bg: #052e16;                     /* Deep Forest Background */
+  --ui-card-bg: #064e3b;                /* Emerald Cards */
+  --ui-surface: #047857;                /* Surface Elements */
+  --ui-text: #f0fdf4;                   /* Mint Cream Text */
+  --ui-text-muted: #86efac;             /* Light Green Muted Text */
+  --ui-border: #059669;                 /* Green Borders */
+  
+  /* Nature Gradients */
+  --ai-gradient: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  --wealth-gradient: linear-gradient(135deg, #059669 0%, #eab308 100%);
+  --nature-gradient: linear-gradient(135deg, #10b981 0%, #facc15 100%);
+  
+  /* Glow Effects */
+  --glow-primary: 0 0 25px rgba(5, 150, 105, 0.4);
+  --glow-secondary: 0 0 30px rgba(234, 179, 8, 0.5);
+  --glow-gold: 0 0 20px rgba(234, 179, 8, 0.6);
+}
+
+[data-bs-theme="dark"] {
+  --ui-bg: #052e16;
+  --ui-card-bg: #064e3b;
+  --ui-surface: #047857;
+  --ui-text: #f0fdf4;
+  --ui-text-muted: #86efac;
+  --ui-border: #059669;
+}

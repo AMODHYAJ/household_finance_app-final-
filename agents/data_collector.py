@@ -1,7 +1,12 @@
 import pandas as pd
+import numpy as np
+import os
 from datetime import datetime, timedelta
+import random
+from typing import List, Dict, Any
 from core.database import Transaction
 from flask_login import current_user
+from utils.category_standardizer import category_standardizer
 
 class DataCollectorAgent:
     def __init__(self, use_llm=True):
@@ -18,9 +23,8 @@ class DataCollectorAgent:
                 print(f"❌ AI Processor initialization failed: {e}")
                 self.use_llm = False
 
-    # ------------------ Basic Methods ------------------
     def get_transactions_df(self, user_id):
-        """Get transactions as DataFrame"""
+        """Get transactions as DataFrame with consistent field names"""
         transactions = Transaction.query.filter_by(user_id=user_id).all()
         if not transactions:
             return pd.DataFrame()
@@ -28,14 +32,14 @@ class DataCollectorAgent:
         data = [{
             "id": t.id,
             "date": t.date,
-            "type": t.t_type,
+            "type": t.type,  # CHANGED: t_type → type
             "category": t.category,
             "amount": t.amount,
             "note": t.note
         } for t in transactions]
         
         df = pd.DataFrame(data)
-        if not df.empty:
+        if not df.empty and 'date' in df.columns:
             df['date'] = pd.to_datetime(df['date'])
         return df
 
@@ -43,59 +47,59 @@ class DataCollectorAgent:
         """Get all transactions for user"""
         return Transaction.query.filter_by(user_id=user_id).all()
 
-    # ------------------ Enhanced Categorization ------------------
     def suggest_category(self, note):
-        """Smart categorization with AI fallback chain"""
+        """Smart categorization with standardization"""
         if not note:
             return "Other"
-        
+    
         if self.use_llm and self.ai_processor:
-            # Use AI processor with fallback chain
-            category = self.ai_processor.categorize_transaction(note, 0)
-            return category.title()  # Convert to title case for display
-        else:
-            # Fallback to rule-based
-            return self.auto_categorize(note)
+            try:
+            # Get AI category
+                ai_category = self.ai_processor.categorize_transaction(note, 0)
+                # Standardize the AI result
+                standardized = category_standardizer.standardize(ai_category)
+                print(f"🤖 AI categorized: '{note}' → {ai_category} → {standardized}")
+                return standardized
+            except Exception as e:
+                print(f"AI categorization failed: {e}")
+    
+        # Fallback to rule-based with standardization
+        category = self.auto_categorize(note)
+        standardized = category_standardizer.standardize(category)
+        print(f"📝 Rule-based categorized: '{note}' → {category} → {standardized}")
+        return standardized
 
     def auto_categorize(self, note):
-        """Rule-based categorization (final fallback)"""
+        """Rule-based categorization with standardization"""
         if not note:
             return "Other"
-        
+    
         note_lower = note.lower()
-        categories = {
-            'Food': ['starbucks', 'restaurant', 'mcdonald', 'coffee', 'meal', 'pizza', 'burger', 'cafe', 'grocer'],
-            'Transport': ['uber', 'bus', 'taxi', 'train', 'flight', 'cab', 'lyft', 'gas', 'fuel'],
-            'Income': ['salary', 'bonus', 'freelance', 'payment', 'invoice', 'stipend', 'refund'],
-            'Shopping': ['amazon', 'flipkart', 'clothes', 'shoes', 'book', 'gift', 'walmart', 'target'],
-            'Entertainment': ['movie', 'netflix', 'spotify', 'game', 'concert', 'cinema'],
-            'Bills': ['electricity', 'water', 'internet', 'phone', 'rent', 'mortgage'],
-            'Healthcare': ['doctor', 'hospital', 'pharmacy', 'medical', 'insurance']
-        }
-        
-        for category, keywords in categories.items():
-            if any(keyword in note_lower for keyword in keywords):
-                return category
-        
+    
+        # Use the standardizer for consistency
+        for standard_category, variations in category_standardizer.standard_categories.items():
+            for variation in variations:
+                if variation in note_lower:
+                    return standard_category
+    
         return "Other"
 
     def suggest_transaction_type(self, note):
         """Suggest transaction type based on note"""
         if not note:
-            return "Expense"
+            return "expense"
             
         note_lower = note.lower()
         income_keywords = ['salary', 'bonus', 'freelance', 'payment', 'invoice', 'stipend', 'refund', 'received']
         
         if any(k in note_lower for k in income_keywords):
-            return "Income"
-        return "Expense"
+            return "income"
+        return "expense"
 
-    # ------------------ Validation & Analysis ------------------
-    def validate_transaction(self, amount, t_type):
+    def validate_transaction(self, amount, transaction_type):
         """Validate transaction amount"""
         if amount <= 0:
-            raise ValueError(f"{t_type} amount must be positive")
+            raise ValueError(f"{transaction_type} amount must be positive")
         if amount > 1_000_000:
             print("Warning: unusually high amount")
         return True
@@ -106,12 +110,11 @@ class DataCollectorAgent:
         if df.empty:
             return []
         
-        # Calculate z-scores for anomaly detection
         mean = df['amount'].mean()
         std = df['amount'].std()
         
-        if std > 0:  # Avoid division by zero
-            anomalies = df[df['amount'] > mean + 2 * std]  # > 2 standard deviations
+        if std > 0:
+            anomalies = df[df['amount'] > mean + 2 * std]
             return anomalies.to_dict('records')
         return []
 
@@ -120,7 +123,6 @@ class DataCollectorAgent:
         note = transaction.note or ""
         amount = transaction.amount
         
-        # Rule-based explanations
         if amount > 1000:
             return "⚠️ Unusually high transaction amount"
         elif "refund" in note.lower():
@@ -130,14 +132,12 @@ class DataCollectorAgent:
         else:
             return "📊 Statistically unusual transaction amount"
 
-    # ------------------ Summary & Reporting ------------------
     def generate_summary(self, user_id, period='week'):
         """Generate financial summary for given period"""
         df = self.get_transactions_df(user_id)
         if df.empty:
             return {}
         
-        # Filter by period
         today = datetime.today().date()
         if period == 'week':
             cutoff = today - timedelta(days=7)
@@ -146,7 +146,6 @@ class DataCollectorAgent:
         else:
             cutoff = datetime.min.date()
         
-        # Ensure cutoff is comparable with date column
         if not df.empty:
             recent = df[df['date'].dt.date >= cutoff]
             
@@ -163,13 +162,13 @@ class DataCollectorAgent:
             }
         return {}
 
-    def suggest_notes(self, user_id, t_type):
+    def suggest_notes(self, user_id, transaction_type):
         """Get unique note suggestions for autocomplete"""
         df = self.get_transactions_df(user_id)
         if df.empty:
             return []
         
-        filtered_df = df[df['type'].str.lower() == t_type.lower()]
+        filtered_df = df[df['type'].str.lower() == transaction_type.lower()]
         return filtered_df['note'].dropna().unique().tolist()
     
     def get_ai_status(self):

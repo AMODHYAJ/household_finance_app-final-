@@ -56,7 +56,7 @@ def ai_charts():
             transaction_data = [{
                 'id': t.id,
                 'date': t.date.isoformat() if t.date else None,
-                'type': t.t_type,
+                'type': t.type,
                 'category': t.category,
                 'amount': float(t.amount),
                 'note': t.note or ''

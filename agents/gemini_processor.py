@@ -3,6 +3,7 @@ import os
 import logging
 from typing import List, Dict, Any
 import re
+from utils.category_standardizer import category_standardizer
 
 class GeminiProcessor:
     def __init__(self):
@@ -57,25 +58,25 @@ class GeminiProcessor:
             self.available = False
     
     def categorize_transaction(self, note: str, amount: float) -> str:
-        """Categorize transaction using Gemini"""
+        """Categorize transaction using Gemini with standardization"""
         if not self.available:
-            return "other"
-        
+            return "Other"
+    
         try:
             model = genai.GenerativeModel(self.model_name)
-            
+        
             prompt = f"""
             Categorize this financial transaction into ONE category:
-            
+        
             Transaction: "{note}"
             Amount: ${amount}
-            
-            Categories: food, shopping, bills, entertainment, transport, healthcare, education, salary, other
-            
-            Return ONLY the category name in lowercase.
-            Example: "food"
+        
+            Categories: {', '.join(category_standardizer.get_standard_categories())}
+        
+            Return ONLY the category name exactly as shown above.
+            Example: "Food"
             """
-            
+        
             response = model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
@@ -83,13 +84,16 @@ class GeminiProcessor:
                     temperature=0.1
                 )
             )
-            
-            category = response.text.strip().lower().replace('"', '').replace("'", "")
-            return self.validate_category(category)
-            
+        
+            raw_category = response.text.strip().replace('"', '').replace("'", "")
+            standardized = category_standardizer.standardize(raw_category)
+        
+            print(f"🤖 Gemini raw: '{raw_category}' → standardized: '{standardized}'")
+            return standardized
+        
         except Exception as e:
             logging.error(f"Gemini categorization failed: {e}")
-            return "other"
+            return "Other"
     
     def generate_financial_insights(self, transactions_data: List[Dict]) -> str:
         """Generate financial insights using Gemini"""

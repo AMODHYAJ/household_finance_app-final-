@@ -5,6 +5,7 @@ from wtforms.validators import DataRequired, Length, EqualTo, ValidationError, O
 from app import db
 from core.database import User
 from flask_wtf.file import FileField, FileAllowed
+from utils.category_standardizer import category_standardizer
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -31,44 +32,41 @@ class RegistrationForm(FlaskForm):
             raise ValidationError('That username is taken. Please choose a different one.')
 
 class TransactionForm(FlaskForm):
-    # Transaction type with proper choices
-    t_type = SelectField('Type', 
-                        choices=[('Income', 'Income'), ('Expense', 'Expense')],
-                        validators=[DataRequired()])
+    type = SelectField('Type', 
+                      choices=[('income', 'Income'), ('expense', 'Expense')],
+                      validators=[DataRequired()])
     
-    # Category field - can be empty for auto-categorization
-    category = StringField('Category', validators=[Optional()])
+    category = SelectField('Category', 
+                          choices=[],  # Will be populated dynamically
+                          validators=[Optional()])
     
-    # Amount with proper validation
     amount = FloatField('Amount', validators=[DataRequired(), NumberRange(min=0.01)])
-    
-    # Date field
     date = DateField('Date', validators=[DataRequired()])
-    
-    # Note field - optional
     note = TextAreaField('Note', validators=[Optional()])
-    
-    # Receipt upload field
     receipt = FileField('Upload Receipt', validators=[
         FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 'Images or PDFs only!')
     ])
-    
     submit = SubmitField('Add Transaction')
     
+    def __init__(self, *args, **kwargs):
+        super(TransactionForm, self).__init__(*args, **kwargs)
+        # Populate with standardized categories
+        self.category.choices = [('', 'Auto-categorize')] + [
+            (cat, cat) for cat in category_standardizer.get_standard_categories()
+        ]
+
     def validate_amount(self, amount):
-        """Custom amount validation"""
         if amount.data <= 0:
             raise ValidationError('Amount must be greater than 0.')
         if amount.data > 1000000:
             raise ValidationError('Amount seems unusually high. Please verify.')
 
-# Additional form for search/filtering if needed
 class SearchForm(FlaskForm):
     query = StringField('Search', validators=[Optional()])
     category = SelectField('Category', choices=[], validators=[Optional()])
-    t_type = SelectField('Type', 
-                        choices=[('', 'All'), ('Income', 'Income'), ('Expense', 'Expense')],
-                        validators=[Optional()])
+    type = SelectField('Type',  # FIXED: t_type → type
+                      choices=[('', 'All'), ('income', 'Income'), ('expense', 'Expense')],
+                      validators=[Optional()])
     date_from = DateField('From Date', validators=[Optional()])
     date_to = DateField('To Date', validators=[Optional()])
     submit = SubmitField('Search')

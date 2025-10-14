@@ -77,9 +77,7 @@
                             <tr>
                                 <td>{{ transaction.date.strftime('%Y-%m-%d') }}</td>
                                 <td>
-                                    <span class="badge {% if transaction.t_type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
-                                        {{ transaction.t_type.title() }}
-                                    </span>
+                                    <span class="badge {% if transaction.type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
                                 </td>
                                 <td>{{ transaction.category }}</td>
                                 <td>${{ "%.2f"|format(transaction.amount) }}</td>

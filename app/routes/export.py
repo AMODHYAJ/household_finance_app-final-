@@ -18,7 +18,7 @@ def export_csv():
     
     data = [{
         'Date': t.date.strftime('%Y-%m-%d'),
-        'Type': t.t_type.title(),
+        'Type': t.type.title(),
         'Category': t.category,
         'Amount': t.amount,
         'Note': t.note or '',
@@ -60,7 +60,7 @@ def export_summary():
     
     df = pd.DataFrame([{
         'date': t.date,
-        'type': t.t_type,
+        'type': t.type,
         'category': t.category,
         'amount': t.amount
     } for t in transactions])

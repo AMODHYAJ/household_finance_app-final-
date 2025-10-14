@@ -6,6 +6,7 @@ import os
 import logging
 from pdf2image import convert_from_path
 import tempfile
+from utils.category_standardizer import category_standardizer
 
 # Set Tesseract path to your specific installation
 pytesseract.pytesseract.tesseract_cmd = r"E:\SLIT\Y3S1\IRWA\Tesseract-OCR\tesseract.exe"
@@ -230,27 +231,18 @@ def extract_note(text):
         return "Receipt scan"
 
 def extract_category(text):
-    """Rule-based categorization from text"""
+    """Rule-based categorization from text with standardization"""
     try:
         text_lower = text.lower()
         
-        category_patterns = {
-            'Food': ['coffee', 'restaurant', 'cafe', 'meal', 'pizza', 'burger', 'food', 'grocer', 'supermarket', 'dining', 'lunch', 'dinner', 'bakery', 'starbucks'],
-            'Transport': ['uber', 'bus', 'taxi', 'train', 'flight', 'cab', 'gas', 'fuel', 'transport', 'commute', 'parking', 'airport'],
-            'Entertainment': ['movie', 'netflix', 'spotify', 'game', 'cinema', 'entertainment', 'concert', 'theater', 'gaming'],
-            'Shopping': ['amazon', 'clothes', 'shoes', 'book', 'gift', 'shopping', 'store', 'mall', 'purchase', 'market', 'retail'],
-            'Bills': ['electric', 'water', 'internet', 'phone', 'utility', 'bill', 'subscription', 'wifi', 'mobile'],
-            'Healthcare': ['doctor', 'hospital', 'pharmacy', 'medical', 'insurance', 'health', 'clinic', 'medicine'],
-            'Education': ['school', 'university', 'course', 'book', 'tuition', 'college', 'education', 'student'],
-            'Income': ['salary', 'bonus', 'invoice', 'payment', 'refund', 'deposit', 'stipend']
-        }
+        # Use the standardizer
+        for standard_category, variations in category_standardizer.standard_categories.items():
+            for variation in variations:
+                if variation in text_lower:
+                    print(f"🏷️ OCR categorized: '{text}' → {standard_category}")
+                    return standard_category
         
-        for category, keywords in category_patterns.items():
-            if any(keyword in text_lower for keyword in keywords):
-                print(f"🏷️ Categorized as: {category}")
-                return category
-        
-        print("🏷️ Categorized as: Other")
+        print(f"🏷️ OCR categorized: '{text}' → Other")
         return "Other"
     except Exception as e:
         print(f"Category extraction failed: {e}")
@@ -287,7 +279,7 @@ def parse_receipt_text(text):
                 "date": None,
                 "note": "No text extracted from receipt",
                 "category": "Other",
-                "t_type": "Expense",
+                "type": "Expense",
                 "success": False
             }
         
@@ -295,14 +287,14 @@ def parse_receipt_text(text):
         date = extract_date(text)
         note = extract_note(text)
         category = extract_category(text)
-        t_type = extract_transaction_type(text)
+        transaction_type = extract_transaction_type(text)
         
         result = {
             "amount": amount,
             "date": date,
             "note": note,
             "category": category,
-            "t_type": t_type,
+            "type": transaction_type,
             "success": amount > 0  # Consider successful if we found an amount
         }
         
@@ -316,6 +308,6 @@ def parse_receipt_text(text):
             "date": None,
             "note": f"Error processing receipt: {str(e)}",
             "category": "Other",
-            "t_type": "Expense",
+            "type": "Expense",
             "success": False
         }

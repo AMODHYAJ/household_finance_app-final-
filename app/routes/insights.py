@@ -95,7 +95,7 @@ def responsible_ai_dashboard():
     # Convert to DataFrame
     df = pd.DataFrame([{
         'date': t.date,
-        'type': t.t_type,
+        'type': t.type,
         'category': t.category,
         'amount': t.amount,
         'note': t.note or ''

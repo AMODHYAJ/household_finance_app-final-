@@ -92,13 +92,13 @@ class AdvancedSecurity:
         """Validate transaction data for security"""
         try:
             # Check required fields
-            required_fields = ['t_type', 'category', 'amount', 'date']
+            required_fields = ['type', 'category', 'amount', 'date']
             for field in required_fields:
                 if field not in transaction_data:
                     return False, f"Missing required field: {field}"
             
             # Validate transaction type
-            if transaction_data['t_type'] not in ['income', 'expense']:
+            if transaction_data['type'] not in ['income', 'expense']:
                 return False, "Invalid transaction type"
             
             # Validate amount

@@ -1,0 +1,380 @@
+/* Import Theme */
+@import 'theme.css';
+
+/* Base Styles */
+body {
+  background: linear-gradient(135deg, var(--ui-darker) 0%, var(--ui-dark) 100%);
+  color: var(--ui-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  padding-top: 76px;
+  line-height: 1.6;
+}
+
+/* Cyber Glass Navigation */
+.navbar-ai {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow: var(--glow-primary);
+}
+
+.navbar-brand {
+  font-weight: 800;
+  background: var(--ai-gradient);
+  /* Vendor prefixes for background-clip */
+  -webkit-background-clip: text;
+  -moz-background-clip: text;
+  background-clip: text;
+  /* Vendor prefixes for text-fill-color */
+  -webkit-text-fill-color: transparent;
+  -moz-text-fill-color: transparent;
+  color: transparent; /* Fallback */
+  font-size: 1.5rem;
+}
+
+.nav-link {
+  color: var(--ui-light) !important;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  margin: 0 4px;
+  padding: 8px 16px !important;
+}
+
+.nav-link:hover, .nav-link.active {
+  background: var(--ai-gradient);
+  color: white !important;
+  transform: translateY(-2px);
+  box-shadow: var(--glow-primary);
+}
+
+/* Sidebar Styling */
+.sidebar {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid rgba(99, 102, 241, 0.1);
+  min-height: calc(100vh - 76px);
+}
+
+.sidebar .nav-link {
+  color: var(--ui-light) !important;
+  border-radius: 8px;
+  margin: 2px 0;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background: var(--ai-gradient);
+  color: white !important;
+  transform: translateX(5px);
+  border-left-color: var(--ai-accent);
+}
+
+/* Cyber Glass Cards */
+.glass-card {
+  background: var(--ui-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    var(--glow-primary);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.15),
+    var(--glow-secondary);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+/* Card Headers */
+.card {
+  background: var(--ui-card);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 16px 16px 0 0 !important;
+  backdrop-filter: blur(10px);
+}
+
+/* Cyber Buttons */
+.btn-ai {
+  background: var(--ai-gradient);
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-ai::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-ai:hover::before {
+  left: 100%;
+}
+
+.btn-ai:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-secondary);
+}
+
+.btn-primary { background: var(--ai-gradient); border: none; }
+.btn-success { background: linear-gradient(135deg, var(--finance-income) 0%, #22c55e 100%); border: none; }
+.btn-info { background: linear-gradient(135deg, var(--finance-savings) 0%, #3b82f6 100%); border: none; }
+.btn-warning { background: linear-gradient(135deg, var(--finance-investment) 0%, #eab308 100%); border: none; }
+.btn-danger { background: linear-gradient(135deg, var(--finance-expense) 0%, #dc2626 100%); border: none; }
+
+.btn-outline-primary { 
+  border: 2px solid var(--ai-primary); 
+  color: var(--ai-primary);
+  background: transparent;
+}
+
+.btn-outline-primary:hover {
+  background: var(--ai-primary);
+  color: white;
+}
+
+/* Financial Metrics */
+.metric-card, .metric-ai {
+  background: var(--ui-card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.metric-card:hover, .metric-ai:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--glow-primary);
+}
+
+.metric-ai.income {
+  border-left-color: var(--finance-income);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+}
+
+.metric-ai.expense {
+  border-left-color: var(--finance-expense);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+}
+
+.metric-ai.savings {
+  border-left-color: var(--finance-savings);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+}
+
+/* Chart Containers */
+.chart-container-ai {
+  background: var(--ui-card);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+/* Transaction Table */
+.table-ai {
+  background: var(--ui-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.table-ai thead th {
+  background: var(--ai-gradient);
+  color: white;
+  font-weight: 600;
+  border: none;
+  padding: 1rem;
+}
+
+.table-ai tbody tr {
+  transition: all 0.3s ease;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.table-ai tbody tr:hover {
+  background: rgba(99, 102, 241, 0.05);
+  transform: translateX(5px);
+}
+
+/* Category Badges */
+.badge-ai {
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.badge-food { background: var(--finance-income); color: white; }
+.badge-shopping { background: var(--ai-secondary); color: white; }
+.badge-transport { background: var(--finance-investment); color: white; }
+.badge-entertainment { background: var(--finance-expense); color: white; }
+.badge-bills { background: var(--ui-gray); color: white; }
+.badge-healthcare { background: #ec4899; color: white; }
+.badge-education { background: var(--finance-savings); color: white; }
+
+/* Alert Styling */
+.alert-ai {
+  background: var(--ui-card);
+  border: 1px solid;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.alert-ai-info {
+  border-color: var(--ai-primary);
+  box-shadow: var(--glow-primary);
+}
+
+.alert-ai-success {
+  border-color: var(--finance-income);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.alert-ai-warning {
+  border-color: var(--finance-investment);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+}
+
+/* Progress Bars */
+.progress-ai {
+  height: 8px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar-ai {
+  background: var(--ai-gradient);
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+/* Loading Animation */
+.ai-loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(99, 102, 241, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--ai-primary);
+  animation: ai-spin 1s ease-in-out infinite;
+}
+
+@keyframes ai-spin {
+  to { 
+    -webkit-transform: rotate(360deg);
+    -moz-transform: rotate(360deg);
+    -ms-transform: rotate(360deg);
+    -o-transform: rotate(360deg);
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse Animation for Live Data */
+.pulse-ai {
+  animation: ai-pulse 2s infinite;
+}
+
+@keyframes ai-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+}
+
+/* Form Styling */
+.form-control, .form-select {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 12px;
+  color: var(--ui-light);
+  /* Vendor prefix for backdrop-filter */
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus, .form-select:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--ai-primary);
+  box-shadow: var(--glow-primary);
+  color: var(--ui-light);
+}
+
+/* User Selection */
+::selection {
+  background: var(--ai-primary);
+  color: white;
+}
+
+::-moz-selection {
+  background: var(--ai-primary);
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glass-card {
+    margin: 0.5rem;
+    border-radius: 12px;
+  }
+  
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  /* Vendor prefixes for transform */
+  .glass-card:hover {
+    -webkit-transform: translateY(-3px);
+    -moz-transform: translateY(-3px);
+    -ms-transform: translateY(-3px);
+    -o-transform: translateY(-3px);
+    transform: translateY(-3px);
+  }
+}
+
+/* Flexbox vendor prefixes for older browsers */
+.ai-feature {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+}
+
+/* Transition vendor prefixes */
+.transition-all {
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+  transition: all 0.3s ease;
+}

@@ -21,7 +21,7 @@ class InsightGeneratorAgent:
         
         data = [{
             "date": t.date,
-            "type": t.t_type,
+            "type": t.type,
             "category": t.category,
             "amount": t.amount,
             "note": t.note or ""

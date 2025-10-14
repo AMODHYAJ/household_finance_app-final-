@@ -15,10 +15,10 @@ class ChartCreatorAgent:
         df = pd.DataFrame([{
             'category': t.category,
             'amount': t.amount,
-            'type': t.t_type
+            'type': t.type  # CHANGED: t_type → type
         } for t in transactions])
         
-        expenses = df[df['type'] == 'expense']
+        expenses = df[df['type'] == 'expense']  # CHANGED: t_type → type
         if expenses.empty:
             return self._create_empty_chart("No expense data available")
         
@@ -37,10 +37,9 @@ class ChartCreatorAgent:
         if not transactions:
             return self._create_empty_chart("No data available")
         
-        # Convert to monthly data
         df = pd.DataFrame([{
             'date': t.date,
-            'type': t.t_type,
+            'type': t.type,  # CHANGED: t_type → type
             'amount': t.amount
         } for t in transactions])
         

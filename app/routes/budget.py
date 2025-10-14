@@ -6,40 +6,47 @@ from datetime import datetime
 import pandas as pd
 import re
 
+import sys
+import os
+# Add utils to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from utils.category_standardizer import CategoryStandardizer, category_standardizer
+
 budget_bp = Blueprint('budget', __name__)
 
+# Update the BudgetManager class in app/routes/budget.py
 class BudgetManager:
     def __init__(self):
         self.default_budgets = {
-            'food': 300,
-            'shopping': 200,
-            'bills': 150,
-            'entertainment': 100,
-            'transport': 100
+            'Food': 300,
+            'Shopping': 200,
+            'Bills': 150,
+            'Entertainment': 100,
+            'Transport': 100
         }
         
-        # Enhanced category mapping
-        self.category_keywords = {
-            'food': ['food', 'grocery', 'restaurant', 'dining', 'meal', 'supermarket', 'cafe', 'pizza', 'burger'],
-            'shopping': ['shopping', 'store', 'mall', 'retail', 'purchase', 'buy', 'amazon', 'ebay'],
-            'bills': ['bills', 'utility', 'electric', 'water', 'internet', 'phone', 'rent', 'subscription', 'netflix'],
-            'entertainment': ['entertainment', 'movie', 'game', 'netflix', 'spotify', 'fun', 'hobby', 'clash of clans', 'gaming'],
-            'transport': ['transport', 'fuel', 'gas', 'bus', 'train', 'taxi', 'uber', 'car', 'petrol']
-        }
+        # Use the category_standardizer instance correctly
+        self.category_keywords = category_standardizer.standard_categories  # This should work now
     
     def match_category(self, transaction_category):
-        """Match transaction category to budget category using keywords"""
+        """Match transaction category to budget category using standardization"""
         if not transaction_category:
-            return 'other'
-            
-        transaction_category = str(transaction_category).lower().strip()
+            return 'Other'
         
-        for budget_category, keywords in self.category_keywords.items():
-            for keyword in keywords:
-                if keyword in transaction_category:
-                    return budget_category
+        # Standardize the transaction category first
+        standardized_category = category_standardizer.standardize(transaction_category)
         
-        return 'other'
+        # Check if it matches any budget category
+        if standardized_category in self.default_budgets:
+            return standardized_category
+        
+        # If not in budget categories, check for close matches
+        for budget_category in self.default_budgets.keys():
+            if budget_category.lower() in standardized_category.lower():
+                return budget_category
+        
+        return 'Other'
     
     def calculate_budget_progress(self, user_id, month=None, year=None):
         """Calculate budget usage for each category"""
@@ -59,7 +66,7 @@ class BudgetManager:
             # Convert to DataFrame with proper date conversion
             data = []
             for t in transactions:
-                if t.t_type == 'expense':  # Only track expenses for budgets
+                if t.type == 'expense':
                     matched_category = self.match_category(t.category)
                     data.append({
                         'category': matched_category,
@@ -161,7 +168,7 @@ def budget_page():
         
         # Get all user transactions for info
         all_transactions = Transaction.query.filter_by(user_id=current_user.id).all()
-        expense_transactions = [t for t in all_transactions if t.t_type == 'expense']
+        expense_transactions = [t for t in all_transactions if t.type == 'expense']
         
         return render_template('budget.html', 
                              title='Budget Management',
@@ -201,7 +208,7 @@ def budget_debug():
     for t in transactions:
         transaction_data.append({
             'id': t.id,
-            'type': t.t_type,
+            'type': t.type,
             'category': t.category,
             'amount': t.amount,
             'date': str(t.date),
@@ -213,7 +220,7 @@ def budget_debug():
     return jsonify({
         'user_id': current_user.id,
         'total_transactions': len(transactions),
-        'expense_transactions': len([t for t in transactions if t.t_type == 'expense']),
+        'expense_transactions': len([t for t in transactions if t.type == 'expense']),
         'current_month': datetime.now().month,
         'current_year': datetime.now().year,
         'transactions': transaction_data
