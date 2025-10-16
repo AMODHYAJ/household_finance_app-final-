@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Hero Section -->
+        <div class="hero-section">  <!-- Changed from inline style to CSS class -->
+            <h1 class="display-4 fw-bold mb-4">
+                <i class="fas fa-money-bill-wave"></i> Household Finance AI
+            </h1>
+            <p class="lead mb-4">
+                Smart financial management powered by artificial intelligence. 
+                Track expenses, analyze spending patterns, and get AI-powered insights.
+            </p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg px-4">
+                    <i class="fas fa-user-plus"></i> Get Started
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </a>
+                <a href="{{ url_for('main.about') }}" class="btn btn-outline-light btn-lg px-4">
+                    <i class="fas fa-info-circle"></i> Learn More
+                </a>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="row mb-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+                        <h4>AI-Powered Insights</h4>
+                        <p class="text-muted">
+                            Get smart categorization, anomaly detection, and personalized financial recommendations using advanced AI.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-chart-pie fa-3x text-success mb-3"></i>
+                        <h4>Budget Tracking</h4>
+                        <p class="text-muted">
+                            Set custom budgets, track spending across categories, and get alerts when you're approaching limits.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 text-center border-0 shadow-sm">
+                    <div class="card-body">
+                        <i class="fas fa-receipt fa-3x text-warning mb-3"></i>
+                        <h4>Receipt Scanning</h4>
+                        <p class="text-muted">
+                            Upload receipt images and let OCR technology automatically extract transaction details.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="text-center mb-4">How It Works</h2>
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <div class="step-number">1</div>
+                        <h5>Register & Login</h5>
+                        <p>Create your account and log in to access the dashboard</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="step-number">2</div>
+                        <h5>Add Transactions</h5>
+                        <p>Manually enter transactions or scan receipts with OCR</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="step-number">3</div>
+                        <h5>AI Analysis</h5>
+                        <p>Get automatic categorization and insights</p>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="step-number">4</div>
+                        <h5>Track & Improve</h5>
+                        <p>Monitor budgets and get recommendations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technology Stack -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h4 class="mb-0">Built With Modern Technology</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fab fa-python fa-2x text-primary mb-2"></i>
+                                <p>Python Flask</p>
+                            </div>
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fas fa-database fa-2x text-success mb-2"></i>
+                                <p>SQL Database</p>
+                            </div>
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fas fa-brain fa-2x text-warning mb-2"></i>
+                                <p>Google Gemini AI</p>
+                            </div>
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fas fa-eye fa-2x text-info mb-2"></i>
+                                <p>OCR Technology</p>
+                            </div>
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fab fa-js-square fa-2x text-warning mb-2"></i>
+                                <p>JavaScript</p>
+                            </div>
+                            <div class="col-md-2 col-4 mb-3">
+                                <i class="fab fa-bootstrap fa-2x text-purple mb-2"></i>
+                                <p>Bootstrap 5</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Final CTA with About link -->
+        <div class="text-center mt-5">
+            <h3>Ready to Take Control of Your Finances?</h3>
+            <p class="text-muted mb-4">Join thousands of users who are managing their money smarter with AI</p>
+            <div class="d-flex gap-3 justify-content-center flex-wrap">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg px-5">
+                    <i class="fas fa-rocket"></i> Start Your Financial Journey
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,5 +1,5 @@
 # app/__init__.py
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
@@ -40,7 +40,9 @@ def create_app():
     from app.routes.budget import budget_bp
     from app.routes.export import export_bp
     from app.routes.mcp_api import mcp_bp
+    from app.routes.main import main_bp
 
+    app.register_blueprint(main_bp)  # Register main blueprint first
     app.register_blueprint(auth_bp)
     app.register_blueprint(transactions_bp)
     app.register_blueprint(charts_bp)
@@ -48,6 +50,11 @@ def create_app():
     app.register_blueprint(budget_bp)
     app.register_blueprint(export_bp)
     app.register_blueprint(mcp_bp)
+    
+    # Define the default route
+    @app.route('/')
+    def index():
+        return redirect(url_for('main.home'))
     
     # Create tables
     with app.app_context():

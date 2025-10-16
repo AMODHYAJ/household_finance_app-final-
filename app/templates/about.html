@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0"><i class="fas fa-info-circle"></i> About Household Finance AI</h2>
+                    <a href="{{ url_for('main.home') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Home
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="lead">
+                    A smart financial management platform built as a final year project for Computer Science/IT students.
+                </p>
+                
+                <h4>Project Overview</h4>
+                <p>
+                    This web application demonstrates the integration of modern web technologies with artificial intelligence 
+                    to create a comprehensive personal finance management system.
+                </p>
+
+                <h4>Key Features</h4>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5><i class="fas fa-robot text-primary"></i> AI Features</h5>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> Smart transaction categorization</li>
+                                    <li><i class="fas fa-check text-success"></i> Anomaly detection</li>
+                                    <li><i class="fas fa-check text-success"></i> Predictive analytics</li>
+                                    <li><i class="fas fa-check text-success"></i> Natural language search</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5><i class="fas fa-chart-line text-success"></i> Financial Tools</h5>
+                                <ul class="list-unstyled">
+                                    <li><i class="fas fa-check text-success"></i> Budget tracking</li>
+                                    <li><i class="fas fa-check text-success"></i> Expense visualization</li>
+                                    <li><i class="fas fa-check text-success"></i> Receipt scanning (OCR)</li>
+                                    <li><i class="fas fa-check text-success"></i> Financial insights</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4>Technology Stack</h4>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>Backend Development</strong>
+                            </div>
+                            <div class="card-body">
+                                <ul>
+                                    <li>Python Flask Framework</li>
+                                    <li>SQLAlchemy ORM</li>
+                                    <li>SQLite Database</li>
+                                    <li>RESTful API Design</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>Frontend Development</strong>
+                            </div>
+                            <div class="card-body">
+                                <ul>
+                                    <li>HTML5, CSS3, JavaScript</li>
+                                    <li>Bootstrap 5 Framework</li>
+                                    <li>Plotly.js for charts</li>
+                                    <li>Responsive Design</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>AI & Machine Learning</strong>
+                            </div>
+                            <div class="card-body">
+                                <ul>
+                                    <li>Google Gemini AI Integration</li>
+                                    <li>Tesseract OCR Engine</li>
+                                    <li>spaCy Natural Language Processing</li>
+                                    <li>Predictive Analytics</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <strong>Additional Features</strong>
+                            </div>
+                            <div class="card-body">
+                                <ul>
+                                    <li>User Authentication System</li>
+                                    <li>File Upload & Processing</li>
+                                    <li>Data Export Capabilities</li>
+                                    <li>Real-time Notifications</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <h5><i class="fas fa-graduation-cap"></i> Academic Project</h5>
+                    <p class="mb-0">
+                        This project is developed as part of the final year requirements for a Bachelor's degree 
+                        in Computer Science/Information Technology. It demonstrates comprehensive understanding 
+                        of full-stack web development, database design, and AI integration.
+                    </p>
+                </div>
+
+                <!-- Call to Action -->
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-user-plus"></i> Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
