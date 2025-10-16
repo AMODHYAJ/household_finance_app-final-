@@ -6,11 +6,12 @@ from datetime import datetime, timedelta
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import warnings
+import re
 warnings.filterwarnings('ignore')
 
 class LLMChartGenerator:
     """
-    Complete Advanced AI chart generator with expense comparison functionality
+    Complete Advanced AI chart generator with enhanced time-based analysis
     """
     
     def __init__(self):
@@ -27,7 +28,7 @@ class LLMChartGenerator:
         }
     
     def generate_chart_from_query(self, query, transactions_data):
-        """Generate truly advanced AI-powered charts"""
+        """Generate truly advanced AI-powered charts with enhanced error handling"""
         if not transactions_data:
             return self._create_error_response("No transaction data available")
         
@@ -41,12 +42,46 @@ class LLMChartGenerator:
             
             print(f"🤖 Advanced AI Analysis - Query: '{query}', Type: {chart_type}, Depth: {analysis_depth}")
             
+            # Check for custom durations first
+            if chart_type.startswith('custom_duration_'):
+                return self._create_custom_duration_analysis(df, query, analysis_depth)
+            
             # Check if this is a specific expense comparison query
             if self._is_specific_expense_comparison(query):
                 return self._create_simple_expense_comparison(df, query)
             
-            # Generate appropriate advanced chart
-            if chart_type == 'predictive':
+            # Route to specific analysis methods
+            if chart_type == 'last_month_spending':
+                return self._create_last_month_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'this_month_spending':
+                return self._create_this_month_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'last_year_spending':
+                return self._create_last_year_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'this_year_spending':
+                return self._create_this_year_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'last_week_spending':
+                return self._create_last_week_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'this_week_spending':
+                return self._create_this_week_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'today_spending':
+                return self._create_today_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'yesterday_spending':
+                return self._create_yesterday_spending_analysis(df, query, analysis_depth)
+            elif chart_type == 'last_7_days':
+                return self._create_custom_duration_analysis(df, "7 days", analysis_depth)
+            elif chart_type == 'last_30_days':
+                return self._create_custom_duration_analysis(df, "30 days", analysis_depth)
+            elif chart_type == 'last_90_days':
+                return self._create_custom_duration_analysis(df, "90 days", analysis_depth)
+            elif chart_type == 'last_365_days':
+                return self._create_custom_duration_analysis(df, "365 days", analysis_depth)
+            elif chart_type == 'largest_transactions':
+                return self._create_largest_transactions_analysis(df, query, analysis_depth)
+            elif chart_type == 'spending_by_category':
+                return self._create_categorical_analysis(df, query, analysis_depth)
+            elif chart_type == 'expense_trends':
+                return self._create_predictive_analysis(df, query, analysis_depth)
+            elif chart_type == 'predictive':
                 return self._create_predictive_analysis(df, query, analysis_depth)
             elif chart_type == 'behavioral':
                 return self._create_behavioral_analysis(df, query, analysis_depth)
@@ -71,6 +106,843 @@ class LLMChartGenerator:
             traceback.print_exc()
             return self._create_comprehensive_fallback(df, query)
 
+    def _analyze_query_intent(self, query):
+        """Enhanced query analysis with precise time-based filtering"""
+        query_lower = query.lower()
+        
+        # First check for specific expense comparison
+        if self._is_specific_expense_comparison(query_lower):
+            return 'expense_comparison', 'medium'
+        
+        # Precise time period detection
+        time_queries = {
+            # Specific month queries
+            'last_month_spending': ['last month', 'previous month', 'past month'],
+            'this_month_spending': ['this month', 'current month'],
+            'specific_month': ['january', 'february', 'march', 'april', 'may', 'june', 
+                              'july', 'august', 'september', 'october', 'november', 'december'],
+            
+            # Year-based queries
+            'last_year_spending': ['last year', 'previous year', 'past year'],
+            'this_year_spending': ['this year', 'current year'],
+            'yearly_analysis': ['yearly', 'annual', 'per year'],
+            
+            # Week-based queries
+            'last_week_spending': ['last week', 'previous week', 'past week'],
+            'this_week_spending': ['this week', 'current week'],
+            'weekly_analysis': ['weekly', 'per week'],
+            
+            # Day-based queries  
+            'today_spending': ['today', "today's"],
+            'yesterday_spending': ['yesterday', "yesterday's"],
+            'daily_analysis': ['daily', 'per day', 'day by day'],
+            
+            # Specific duration queries
+            'recent_spending': ['recent', 'latest', 'newest', 'recently'],
+            'last_7_days': ['7 days', 'seven days', '1 week', 'one week'],
+            'last_30_days': ['30 days', 'thirty days', '1 month', 'one month'],
+            'last_90_days': ['90 days', 'ninety days', '3 months', 'three months', 'quarter'],
+            'last_365_days': ['365 days', 'year', '12 months', 'twelve months'],
+            
+            # Custom duration patterns (2 months, 3 years, 4 days, etc.)
+            'custom_duration': self._extract_custom_duration(query_lower),
+            
+            # Other specific analyses
+            'largest_transactions': ['largest', 'biggest', 'highest', 'most expensive'],
+            'spending_by_category': ['by category', 'category breakdown', 'categories'],
+            'expense_trends': ['trend', 'pattern', 'over time', 'history'],
+            'monthly_comparison': ['month vs', 'compare months', 'monthly comparison'],
+        }
+        
+        # Check for custom durations first (2 months, 3 years, etc.)
+        custom_duration = self._extract_custom_duration(query_lower)
+        if custom_duration:
+            return f'custom_duration_{custom_duration["unit"]}', 'medium'
+        
+        # Check other time queries
+        for chart_type, keywords in time_queries.items():
+            if chart_type == 'custom_duration':
+                continue  # Already handled above
+            if any(keyword in query_lower for keyword in keywords):
+                return chart_type, 'medium'
+        
+        # Determine analysis depth
+        depth_keywords = {
+            'deep': ['analyze', 'comprehensive', 'detailed', 'thorough', 'in-depth'],
+            'medium': ['show', 'display', 'view', 'see', 'compare'],
+            'light': ['simple', 'basic', 'quick', 'overview']
+        }
+        
+        depth = 'medium'
+        for level, keywords in depth_keywords.items():
+            if any(keyword in query_lower for keyword in keywords):
+                depth = level
+                break
+        
+        # Determine chart type based on content
+        for chart_type, keywords in self.chart_types.items():
+            if any(keyword in query_lower for keyword in keywords):
+                return chart_type, depth
+        
+        return 'dashboard', depth
+
+    def _extract_custom_duration(self, query_lower):
+        """Extract custom durations like '2 months', '3 years', '4 days'"""
+        # Pattern to match numbers followed by time units
+        patterns = [
+            (r'(\d+)\s*months?', 'months'),
+            (r'(\d+)\s*years?', 'years'), 
+            (r'(\d+)\s*days?', 'days'),
+            (r'(\d+)\s*weeks?', 'weeks'),
+            (r'(\d+)\s*quarters?', 'months'),  # 1 quarter = 3 months
+        ]
+        
+        for pattern, unit in patterns:
+            match = re.search(pattern, query_lower)
+            if match:
+                number = int(match.group(1))
+                return {
+                    'number': number,
+                    'unit': unit,
+                    'query': query_lower
+                }
+        
+        return None
+
+    def _create_custom_duration_analysis(self, df, query, depth):
+        """Analyze custom time periods like '2 months', '3 years', '4 days'"""
+        try:
+            duration_info = self._extract_custom_duration(query.lower())
+            if not duration_info:
+                return self._create_error_response("Could not understand the time period in your query.")
+            
+            number = duration_info['number']
+            unit = duration_info['unit']
+            
+            # Calculate date range
+            end_date = datetime.now()
+            if unit == 'days':
+                start_date = end_date - timedelta(days=number)
+                period_name = f"{number} day{'s' if number > 1 else ''}"
+            elif unit == 'weeks':
+                start_date = end_date - timedelta(weeks=number)
+                period_name = f"{number} week{'s' if number > 1 else ''}"
+            elif unit == 'months':
+                start_date = end_date - timedelta(days=number * 30)  # Approximate
+                period_name = f"{number} month{'s' if number > 1 else ''}"
+            elif unit == 'years':
+                start_date = end_date - timedelta(days=number * 365)  # Approximate
+                period_name = f"{number} year{'s' if number > 1 else ''}"
+            else:
+                return self._create_error_response(f"Unsupported time unit: {unit}")
+            
+            # Filter data for the period
+            period_expenses = df[
+                (df['type'] == 'expense') & 
+                (df['date'] >= start_date) & 
+                (df['date'] <= end_date)
+            ].copy()
+            
+            if period_expenses.empty:
+                return self._create_custom_duration_error_response(df, period_name, start_date, end_date)
+            
+            # Create custom analysis based on duration length
+            if number <= 7:  # Short period (days)
+                return self._create_short_period_analysis(period_expenses, query, period_name, start_date, end_date)
+            elif number <= 90:  # Medium period (weeks/months)
+                return self._create_medium_period_analysis(period_expenses, query, period_name, start_date, end_date)
+            else:  # Long period (months/years)
+                return self._create_long_period_analysis(period_expenses, query, period_name, start_date, end_date)
+            
+        except Exception as e:
+            print(f"❌ Custom duration analysis error: {e}")
+            return self._create_comprehensive_fallback(df, query)
+
+    def _create_short_period_analysis(self, expenses_df, query, period_name, start_date, end_date):
+        """Analysis for short periods (up to 7 days) - detailed daily breakdown"""
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=(
+                f'Daily Spending - {period_name}',
+                'Spending Timeline',
+                'Category Breakdown',
+                'Spending Statistics'
+            ),
+            specs=[
+                [{"type": "bar"}, {"type": "scatter"}],
+                [{"type": "pie"}, {"type": "indicator"}]
+            ]
+        )
+        
+        # 1. Daily spending bar chart
+        daily_spending = expenses_df.groupby('date')['amount'].sum()
+        dates_range = pd.date_range(start=start_date, end=end_date, freq='D')
+        
+        # Fill missing days with zero
+        full_daily_spending = daily_spending.reindex(dates_range, fill_value=0)
+        
+        fig.add_trace(go.Bar(
+            x=full_daily_spending.index,
+            y=full_daily_spending.values,
+            name='Daily Spending',
+            marker_color='#e74c3c',
+            hovertemplate='Date: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+        ), row=1, col=1)
+        
+        # 2. Cumulative spending
+        cumulative_data = expenses_df.sort_values('date')
+        if not cumulative_data.empty:
+            cumulative_data['cumulative'] = cumulative_data['amount'].cumsum()
+            fig.add_trace(go.Scatter(
+                x=cumulative_data['date'],
+                y=cumulative_data['cumulative'],
+                name='Cumulative Spending',
+                line=dict(color='#3498db', width=3),
+                mode='lines+markers',
+                hovertemplate='Date: %{x}<br>Cumulative: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+        
+        # 3. Category breakdown
+        category_totals = expenses_df.groupby('category')['amount'].sum()
+        if not category_totals.empty:
+            fig.add_trace(go.Pie(
+                labels=category_totals.index,
+                values=category_totals.values,
+                name='Categories',
+                hole=0.4,
+                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+            ), row=2, col=1)
+        
+        # 4. Statistics indicator
+        total_spent = expenses_df['amount'].sum()
+        avg_daily = full_daily_spending.mean()
+        days_with_spending = (full_daily_spending > 0).sum()
+        
+        fig.add_trace(go.Indicator(
+            mode="number+delta",
+            value=total_spent,
+            number={'prefix': '$'},
+            title={'text': f"Total {period_name}"},
+            delta={'reference': 0},
+            domain={'row': 2, 'column': 2}
+        ), row=2, col=2)
+        
+        fig.update_layout(
+            height=700,
+            title_text=f"📊 {period_name.title()} Spending Analysis: {query.title()}",
+            showlegend=False
+        )
+        
+        insights = [
+            f"Total spent in {period_name}: ${total_spent:.2f}",
+            f"Average daily spending: ${avg_daily:.2f}",
+            f"Days with spending: {days_with_spending}/{len(dates_range)}",
+            f"Highest spending day: ${full_daily_spending.max():.2f}" if not full_daily_spending.empty else "No spending data",
+            f"Top category: {category_totals.idxmax() if not category_totals.empty else 'N/A'}"
+        ]
+        
+        return self._create_success_response(fig, "short_period_analysis", 
+                                           f"Detailed daily analysis of {period_name} spending", insights)
+
+    def _create_medium_period_analysis(self, expenses_df, query, period_name, start_date, end_date):
+        """Analysis for medium periods (1 week to 3 months) - weekly aggregation"""
+        # Aggregate by week
+        expenses_df['week'] = expenses_df['date'].dt.to_period('W')
+        weekly_spending = expenses_df.groupby('week')['amount'].sum()
+        
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=(
+                f'Weekly Spending - {period_name}',
+                'Spending Distribution',
+                'Category Trends',
+                'Spending Patterns'
+            ),
+            specs=[
+                [{"type": "bar"}, {"type": "box"}],
+                [{"type": "bar"}, {"type": "heatmap"}]
+            ]
+        )
+        
+        # 1. Weekly spending
+        fig.add_trace(go.Bar(
+            x=weekly_spending.index.astype(str),
+            y=weekly_spending.values,
+            name='Weekly Spending',
+            marker_color='#e74c3c',
+            hovertemplate='Week: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+        ), row=1, col=1)
+        
+        # 2. Spending distribution
+        fig.add_trace(go.Box(
+            y=expenses_df['amount'],
+            name='Transaction Distribution',
+            marker_color='#3498db',
+            boxpoints='all',
+            jitter=0.3,
+            hovertemplate='Amount: $%{y:.2f}<extra></extra>'
+        ), row=1, col=2)
+        
+        # 3. Category trends over weeks
+        category_weekly = expenses_df.groupby(['week', 'category'])['amount'].sum().unstack(fill_value=0)
+        for category in category_weekly.columns:
+            fig.add_trace(go.Bar(
+                x=category_weekly.index.astype(str),
+                y=category_weekly[category],
+                name=category,
+                hovertemplate='Week: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=2, col=1)
+        
+        # 4. Day of week heatmap
+        expenses_df['day_of_week'] = expenses_df['date'].dt.day_name()
+        expenses_df['week_num'] = expenses_df['date'].dt.isocalendar().week
+        day_week_heatmap = expenses_df.groupby(['day_of_week', 'week_num'])['amount'].sum().unstack(fill_value=0)
+        
+        days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        day_week_heatmap = day_week_heatmap.reindex(days_order)
+        
+        fig.add_trace(go.Heatmap(
+            z=day_week_heatmap.values,
+            x=day_week_heatmap.columns.astype(str),
+            y=day_week_heatmap.index,
+            colorscale='Viridis',
+            name='Spending Heatmap',
+            hovertemplate='Week: %{x}<br>Day: %{y}<br>Amount: $%{z:.2f}<extra></extra>'
+        ), row=2, col=2)
+        
+        fig.update_layout(
+            height=700,
+            title_text=f"📈 {period_name.title()} Weekly Analysis: {query.title()}",
+            showlegend=True,
+            barmode='stack'
+        )
+        
+        total_spent = expenses_df['amount'].sum()
+        avg_weekly = weekly_spending.mean()
+        
+        insights = [
+            f"Total spent in {period_name}: ${total_spent:.2f}",
+            f"Average weekly spending: ${avg_weekly:.2f}",
+            f"Number of weeks analyzed: {len(weekly_spending)}",
+            f"Highest spending week: ${weekly_spending.max():.2f}" if not weekly_spending.empty else "No data",
+            f"Most active spending day: {expenses_df['day_of_week'].mode().iloc[0] if not expenses_df['day_of_week'].mode().empty else 'N/A'}"
+        ]
+        
+        return self._create_success_response(fig, "medium_period_analysis", 
+                                           f"Weekly analysis of {period_name} spending patterns", insights)
+
+    def _create_long_period_analysis(self, expenses_df, query, period_name, start_date, end_date):
+        """Analysis for long periods (3+ months) - monthly aggregation and trends"""
+        # Aggregate by month
+        expenses_df['month'] = expenses_df['date'].dt.to_period('M')
+        monthly_spending = expenses_df.groupby('month')['amount'].sum()
+        
+        fig = make_subplots(
+            rows=2, cols=2,
+            subplot_titles=(
+                f'Monthly Spending - {period_name}',
+                'Spending Trend',
+                'Category Evolution',
+                'Seasonal Patterns'
+            ),
+            specs=[
+                [{"type": "bar"}, {"type": "scatter"}],
+                [{"type": "scatter"}, {"type": "box"}]
+            ]
+        )
+        
+        # 1. Monthly spending bars
+        fig.add_trace(go.Bar(
+            x=monthly_spending.index.astype(str),
+            y=monthly_spending.values,
+            name='Monthly Spending',
+            marker_color='#e74c3c',
+            hovertemplate='Month: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+        ), row=1, col=1)
+        
+        # 2. Trend line
+        if len(monthly_spending) > 1:
+            fig.add_trace(go.Scatter(
+                x=monthly_spending.index.astype(str),
+                y=monthly_spending.values,
+                name='Spending Trend',
+                line=dict(color='#3498db', width=3),
+                mode='lines+markers',
+                hovertemplate='Month: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+        
+        # 3. Category trends over months
+        category_monthly = expenses_df.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
+        for category in category_monthly.columns[:3]:  # Show top 3 categories
+            fig.add_trace(go.Scatter(
+                x=category_monthly.index.astype(str),
+                y=category_monthly[category],
+                name=f'{category} Trend',
+                mode='lines+markers',
+                hovertemplate='Month: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=2, col=1)
+        
+        # 4. Monthly distribution
+        monthly_avg = expenses_df.groupby(expenses_df['date'].dt.month)['amount'].mean()
+        month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        monthly_avg = monthly_avg.reindex(range(1, 13), fill_value=0)
+        
+        fig.add_trace(go.Box(
+            y=[expenses_df[expenses_df['date'].dt.month == i]['amount'].values for i in range(1, 13)],
+            x=month_names,
+            name='Monthly Distribution',
+            marker_color='#2ecc71',
+            hovertemplate='Month: %{x}<extra></extra>'
+        ), row=2, col=2)
+        
+        fig.update_layout(
+            height=700,
+            title_text=f"📈 {period_name.title()} Monthly Analysis: {query.title()}",
+            showlegend=True
+        )
+        
+        total_spent = expenses_df['amount'].sum()
+        avg_monthly = monthly_spending.mean()
+        trend_direction = "increasing" if len(monthly_spending) > 1 and monthly_spending.iloc[-1] > monthly_spending.iloc[0] else "decreasing"
+        
+        insights = [
+            f"Total spent in {period_name}: ${total_spent:.2f}",
+            f"Average monthly spending: ${avg_monthly:.2f}",
+            f"Number of months analyzed: {len(monthly_spending)}",
+            f"Overall trend: {trend_direction}",
+            f"Highest spending month: ${monthly_spending.max():.2f}" if not monthly_spending.empty else "No data"
+        ]
+        
+        return self._create_success_response(fig, "long_period_analysis", 
+                                           f"Monthly trend analysis of {period_name} spending", insights)
+
+    def _create_custom_duration_error_response(self, df, period_name, start_date, end_date):
+        """Create helpful error response for custom duration queries"""
+        expenses_df = df[df['type'] == 'expense']
+        
+        if expenses_df.empty:
+            insights = [
+                "No expense transactions found in your data",
+                "Add expense transactions to enable time-based analysis",
+                f"Total transactions: {len(df)}",
+                f"Transaction types: {', '.join(df['type'].unique())}"
+            ]
+        else:
+            available_dates = expenses_df['date'].dt.to_period('M').unique()
+            date_strings = [str(date) for date in sorted(available_dates)]
+            
+            insights = [
+                f"Requested period: {period_name} ({start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')})",
+                f"Available months with expense data: {len(available_dates)}",
+                f"Date range: {min(date_strings) if date_strings else 'N/A'} to {max(date_strings) if date_strings else 'N/A'}",
+                "Try analyzing one of the available months above",
+                f"Total expense transactions: {len(expenses_df)}"
+            ]
+        
+        return {
+            'success': False,
+            'error': f"No expense data found for {period_name} ({start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}).",
+            'chart_type': 'time_period_missing',
+            'analysis_notes': f'Requested time period not available',
+            'insights': insights,
+            'available_periods': [str(period) for period in available_dates] if not expenses_df.empty else []
+        }
+
+    # Time-specific analysis methods
+    def _create_last_month_spending_analysis(self, df, query, depth):
+        """Specific analysis for last month spending"""
+        try:
+            # Filter for last month's expenses
+            current_date = datetime.now()
+            first_day_last_month = current_date.replace(day=1) - timedelta(days=1)
+            first_day_last_month = first_day_last_month.replace(day=1)
+            last_day_last_month = current_date.replace(day=1) - timedelta(days=1)
+            
+            last_month_expenses = df[
+                (df['type'] == 'expense') & 
+                (df['date'] >= first_day_last_month) & 
+                (df['date'] <= last_day_last_month)
+            ].copy()
+            
+            if last_month_expenses.empty:
+                # Show what data we have instead
+                available_months = df[df['type'] == 'expense']['date'].dt.to_period('M').unique()
+                return self._create_time_period_error_response(
+                    df, 
+                    f"No expense data found for last month ({first_day_last_month.strftime('%B %Y')}).",
+                    "last_month",
+                    available_months
+                )
+            
+            # Create focused last month analysis
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=(
+                    f'Last Month Spending: {first_day_last_month.strftime("%B %Y")}',
+                    'Daily Spending Pattern',
+                    'Category Breakdown',
+                    'Top Transactions'
+                ),
+                specs=[
+                    [{"type": "bar"}, {"type": "scatter"}],
+                    [{"type": "pie"}, {"type": "bar"}]
+                ]
+            )
+            
+            # 1. Daily spending bar chart
+            daily_spending = last_month_expenses.groupby('date')['amount'].sum()
+            fig.add_trace(go.Bar(
+                x=daily_spending.index,
+                y=daily_spending.values,
+                name='Daily Spending',
+                marker_color='#e74c3c',
+                hovertemplate='Date: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=1, col=1)
+            
+            # 2. Cumulative spending
+            cumulative_spending = last_month_expenses.sort_values('date')['amount'].cumsum()
+            fig.add_trace(go.Scatter(
+                x=last_month_expenses.sort_values('date')['date'],
+                y=cumulative_spending,
+                name='Cumulative Spending',
+                line=dict(color='#3498db', width=3),
+                mode='lines',
+                hovertemplate='Date: %{x}<br>Cumulative: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+            
+            # 3. Category breakdown
+            category_totals = last_month_expenses.groupby('category')['amount'].sum()
+            fig.add_trace(go.Pie(
+                labels=category_totals.index,
+                values=category_totals.values,
+                name='Categories',
+                hole=0.4,
+                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+            ), row=2, col=1)
+            
+            # 4. Top transactions
+            top_transactions = last_month_expenses.nlargest(5, 'amount')
+            fig.add_trace(go.Bar(
+                x=top_transactions['amount'],
+                y=top_transactions['note'].fillna('No description'),
+                orientation='h',
+                name='Top Transactions',
+                marker_color='#2ecc71',
+                hovertemplate='Amount: $%{x:.2f}<br>Description: %{y}<extra></extra>'
+            ), row=2, col=2)
+            
+            fig.update_layout(
+                height=700,
+                title_text=f"📅 Last Month Spending Analysis: {query.title()}",
+                showlegend=False
+            )
+            
+            total_spent = last_month_expenses['amount'].sum()
+            avg_daily = daily_spending.mean()
+            max_day = daily_spending.idxmax()
+            
+            insights = [
+                f"Total spent last month: ${total_spent:.2f}",
+                f"Average daily spending: ${avg_daily:.2f}",
+                f"Highest spending day: {max_day.strftime('%B %d')} (${daily_spending.max():.2f})",
+                f"Top category: {category_totals.idxmax()} (${category_totals.max():.2f})",
+                f"Number of transactions: {len(last_month_expenses)}"
+            ]
+            
+            return self._create_success_response(fig, "last_month_analysis", 
+                                               f"Detailed analysis of last month's spending", insights)
+            
+        except Exception as e:
+            print(f"❌ Last month analysis error: {e}")
+            return self._create_comprehensive_fallback(df, query)
+
+    def _create_this_month_spending_analysis(self, df, query, depth):
+        """Specific analysis for current month spending"""
+        try:
+            # Filter for current month's expenses
+            current_date = datetime.now()
+            first_day_this_month = current_date.replace(day=1)
+            
+            this_month_expenses = df[
+                (df['type'] == 'expense') & 
+                (df['date'] >= first_day_this_month)
+            ].copy()
+            
+            if this_month_expenses.empty:
+                available_months = df[df['type'] == 'expense']['date'].dt.to_period('M').unique()
+                return self._create_time_period_error_response(
+                    df,
+                    f"No expense data found for this month ({first_day_this_month.strftime('%B %Y')}).",
+                    "this_month", 
+                    available_months
+                )
+            
+            # Create this month analysis (similar structure but with progress indicators)
+            days_in_month = (current_date - first_day_this_month).days + 1
+            total_days_in_month = (current_date.replace(day=28) + timedelta(days=4)).replace(day=1) - timedelta(days=1)
+            total_days_in_month = total_days_in_month.day
+            
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=(
+                    f'This Month Spending: {first_day_this_month.strftime("%B %Y")}',
+                    'Spending Progress vs Time',
+                    'Category Distribution',
+                    'Daily Spending Rate'
+                ),
+                specs=[
+                    [{"type": "bar"}, {"type": "scatter"}],
+                    [{"type": "pie"}, {"type": "indicator"}]
+                ]
+            )
+            
+            # 1. Daily spending
+            daily_spending = this_month_expenses.groupby('date')['amount'].sum()
+            fig.add_trace(go.Bar(
+                x=daily_spending.index,
+                y=daily_spending.values,
+                name='Daily Spending',
+                marker_color='#e74c3c',
+                hovertemplate='Date: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=1, col=1)
+            
+            # 2. Cumulative vs expected linear
+            cumulative_data = this_month_expenses.sort_values('date')
+            cumulative_data['cumulative'] = cumulative_data['amount'].cumsum()
+            
+            # Create expected linear spending line
+            total_to_date = cumulative_data['cumulative'].iloc[-1] if not cumulative_data.empty else 0
+            expected_daily = total_to_date / days_in_month if days_in_month > 0 else 0
+            
+            dates_range = pd.date_range(start=first_day_this_month, end=current_date, freq='D')
+            expected_cumulative = [expected_daily * (i + 1) for i in range(len(dates_range))]
+            
+            fig.add_trace(go.Scatter(
+                x=dates_range,
+                y=expected_cumulative,
+                name='Expected Linear Spending',
+                line=dict(color='#95a5a6', width=2, dash='dash'),
+                hovertemplate='Date: %{x}<br>Expected: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+            
+            fig.add_trace(go.Scatter(
+                x=cumulative_data['date'],
+                y=cumulative_data['cumulative'],
+                name='Actual Spending',
+                line=dict(color='#3498db', width=3),
+                hovertemplate='Date: %{x}<br>Actual: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+            
+            # 3. Category breakdown
+            category_totals = this_month_expenses.groupby('category')['amount'].sum()
+            fig.add_trace(go.Pie(
+                labels=category_totals.index,
+                values=category_totals.values,
+                name='Categories',
+                hole=0.4,
+                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+            ), row=2, col=1)
+            
+            # 4. Progress indicator
+            month_progress = (days_in_month / total_days_in_month) * 100
+            spending_progress = (total_to_date / (expected_daily * total_days_in_month)) * 100 if expected_daily > 0 else 0
+            
+            fig.add_trace(go.Indicator(
+                mode="gauge+number",
+                value=spending_progress,
+                number={'suffix': "%"},
+                title={'text': "Spending vs Time Progress"},
+                gauge={
+                    'axis': {'range': [0, 200]},
+                    'bar': {'color': "green" if spending_progress <= 100 else "orange" if spending_progress <= 150 else "red"},
+                    'steps': [
+                        {'range': [0, 100], 'color': "lightgreen"},
+                        {'range': [100, 150], 'color': "yellow"},
+                        {'range': [150, 200], 'color': "lightcoral"}
+                    ],
+                    'threshold': {
+                        'line': {'color': "red", 'width': 4},
+                        'thickness': 0.75,
+                        'value': 100
+                    }
+                },
+                domain={'row': 2, 'column': 2}
+            ), row=2, col=2)
+            
+            fig.update_layout(
+                height=700,
+                title_text=f"📊 This Month Spending Analysis: {query.title()}",
+                showlegend=True
+            )
+            
+            total_spent = this_month_expenses['amount'].sum()
+            avg_daily = daily_spending.mean() if not daily_spending.empty else 0
+            
+            insights = [
+                f"Total spent this month: ${total_spent:.2f}",
+                f"Average daily spending: ${avg_daily:.2f}",
+                f"Month progress: {days_in_month}/{total_days_in_month} days ({month_progress:.1f}%)",
+                f"Spending progress: {spending_progress:.1f}% of expected monthly total",
+                f"Top category: {category_totals.idxmax() if not category_totals.empty else 'N/A'}"
+            ]
+            
+            return self._create_success_response(fig, "this_month_analysis", 
+                                               f"Current month spending analysis with progress tracking", insights)
+            
+        except Exception as e:
+            print(f"❌ This month analysis error: {e}")
+            return self._create_comprehensive_fallback(df, query)
+
+    def _create_largest_transactions_analysis(self, df, query, depth):
+        """Analysis of largest transactions"""
+        try:
+            # Get largest transactions (both income and expense)
+            largest_expenses = df[df['type'] == 'expense'].nlargest(10, 'amount')
+            largest_income = df[df['type'] == 'income'].nlargest(10, 'amount')
+            
+            if largest_expenses.empty and largest_income.empty:
+                return self._create_error_response("No transaction data available for largest transactions analysis.")
+            
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=(
+                    'Top 10 Largest Expenses',
+                    'Top 10 Largest Income',
+                    'Expense Categories - Largest',
+                    'Income Sources - Largest'
+                ),
+                specs=[
+                    [{"type": "bar"}, {"type": "bar"}],
+                    [{"type": "bar"}, {"type": "bar"}]
+                ]
+            )
+            
+            # 1. Largest expenses
+            if not largest_expenses.empty:
+                fig.add_trace(go.Bar(
+                    x=largest_expenses['amount'],
+                    y=largest_expenses['note'].fillna('No description'),
+                    orientation='h',
+                    name='Largest Expenses',
+                    marker_color='#e74c3c',
+                    hovertemplate='Amount: $%{x:.2f}<br>Date: %{customdata}<extra></extra>',
+                    customdata=largest_expenses['date'].dt.strftime('%Y-%m-%d')
+                ), row=1, col=1)
+            
+            # 2. Largest income
+            if not largest_income.empty:
+                fig.add_trace(go.Bar(
+                    x=largest_income['amount'],
+                    y=largest_income['note'].fillna('No description'),
+                    orientation='h',
+                    name='Largest Income',
+                    marker_color='#2ecc71',
+                    hovertemplate='Amount: $%{x:.2f}<br>Date: %{customdata}<extra></extra>',
+                    customdata=largest_income['date'].dt.strftime('%Y-%m-%d')
+                ), row=1, col=2)
+            
+            # 3. Expense categories for largest transactions
+            if not largest_expenses.empty:
+                expense_by_category = largest_expenses.groupby('category')['amount'].sum().nlargest(5)
+                fig.add_trace(go.Bar(
+                    x=expense_by_category.index,
+                    y=expense_by_category.values,
+                    name='Expense Categories',
+                    marker_color='#e67e22',
+                    hovertemplate='Category: %{x}<br>Total: $%{y:.2f}<extra></extra>'
+                ), row=2, col=1)
+            
+            # 4. Income categories for largest transactions
+            if not largest_income.empty:
+                income_by_category = largest_income.groupby('category')['amount'].sum().nlargest(5)
+                fig.add_trace(go.Bar(
+                    x=income_by_category.index,
+                    y=income_by_category.values,
+                    name='Income Categories',
+                    marker_color='#27ae60',
+                    hovertemplate='Category: %{x}<br>Total: $%{y:.2f}<extra></extra>'
+                ), row=2, col=2)
+            
+            fig.update_layout(
+                height=700,
+                title_text=f"💰 Largest Transactions Analysis: {query.title()}",
+                showlegend=False
+            )
+            
+            insights = []
+            if not largest_expenses.empty:
+                insights.append(f"Largest expense: ${largest_expenses['amount'].iloc[0]:.2f} ({largest_expenses['note'].iloc[0]})")
+                insights.append(f"Total large expenses: ${largest_expenses['amount'].sum():.2f}")
+            
+            if not largest_income.empty:
+                insights.append(f"Largest income: ${largest_income['amount'].iloc[0]:.2f} ({largest_income['note'].iloc[0]})")
+                insights.append(f"Total large income: ${largest_income['amount'].sum():.2f}")
+            
+            insights.append(f"Analysis covers {len(largest_expenses) + len(largest_income)} largest transactions")
+            
+            return self._create_success_response(fig, "largest_transactions", 
+                                               f"Analysis of largest transactions by amount", insights)
+            
+        except Exception as e:
+            print(f"❌ Largest transactions analysis error: {e}")
+            return self._create_comprehensive_fallback(df, query)
+
+    def _create_time_period_error_response(self, df, message, period_type, available_periods):
+        """Create helpful error response for time period queries"""
+        expenses_df = df[df['type'] == 'expense']
+        
+        if expenses_df.empty:
+            insights = [
+                "No expense transactions found in your data",
+                "Add expense transactions to enable time-based analysis",
+                f"Total transactions: {len(df)}",
+                f"Transaction types: {', '.join(df['type'].unique())}"
+            ]
+        else:
+            available_dates = expenses_df['date'].dt.to_period('M').unique()
+            date_strings = [str(date) for date in sorted(available_dates)]
+            
+            insights = [
+                f"Available months with expense data: {len(available_dates)}",
+                f"Date range: {min(date_strings) if date_strings else 'N/A'} to {max(date_strings) if date_strings else 'N/A'}",
+                "Try analyzing one of the available months above",
+                f"Total expense transactions: {len(expenses_df)}"
+            ]
+        
+        return {
+            'success': False,
+            'error': message,
+            'chart_type': 'time_period_missing',
+            'analysis_notes': f'Requested time period not available',
+            'insights': insights,
+            'available_periods': [str(period) for period in available_periods] if available_periods is not None else []
+        }
+
+    # Placeholder methods for other time-based analyses (you can implement these similarly)
+    def _create_last_year_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, "1 year", depth)
+    
+    def _create_this_year_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, f"{datetime.now().year}", depth)
+    
+    def _create_last_week_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, "7 days", depth)
+    
+    def _create_this_week_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, "7 days", depth)
+    
+    def _create_today_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, "1 day", depth)
+    
+    def _create_yesterday_spending_analysis(self, df, query, depth):
+        return self._create_custom_duration_analysis(df, "1 day", depth)
+
+    # Keep all existing methods from your original implementation below...
+    # (All the methods like _is_specific_expense_comparison, _create_simple_expense_comparison, 
+    # _extract_specific_categories_from_query, _create_missing_data_response, 
+    # _create_suggestion_response, _create_temporal_analysis, etc.)
+    
     def _is_specific_expense_comparison(self, query):
         """Check if query is specifically asking to compare expense categories"""
         query_lower = query.lower()
@@ -85,58 +957,89 @@ class LLMChartGenerator:
         return has_comparison and has_categories
 
     def _create_simple_expense_comparison(self, df, query):
-        """Create simple bar chart for specific expense category comparisons"""
+        """Create simple bar chart for specific expense category comparisons with enhanced error handling"""
         try:
             expenses_df = df[df['type'] == 'expense'].copy()
             
             if expenses_df.empty:
-                return self._create_error_response("No expense data available for comparison")
+                return self._create_error_response(
+                    "No expense data available for comparison. "
+                    "Add some expense transactions first."
+                )
             
-            # Extract specific categories mentioned in query
-            categories_to_compare = self._extract_specific_categories_from_query(query, expenses_df)
+            # Extract specific categories mentioned in query with missing data info
+            categories_to_compare, missing_categories = self._extract_specific_categories_from_query(query, expenses_df)
             
-            if len(categories_to_compare) < 2:
-                return self._create_error_response(f"Could not find specific categories to compare in '{query}'. Try 'food vs shopping' or 'compare transport and entertainment'")
+            print(f"🔍 DEBUG: categories_to_compare={categories_to_compare}, missing_categories={missing_categories}")
+
+            # NEW LOGIC: If user specifically requested categories that don't exist, show error
+            comparison_words = [' vs ', ' versus ', 'compare ']
+            query_lower = query.lower()
+            has_direct_comparison = any(word in query_lower for word in comparison_words)
             
-            print(f"📊 Creating simple comparison for: {categories_to_compare}")
+            if has_direct_comparison and missing_categories:
+                # User specifically asked for categories that don't exist
+                return self._create_missing_data_response(missing_categories, expenses_df)
             
-            # Calculate totals for the specific categories
-            category_totals = expenses_df.groupby('category')['amount'].sum()
-            comparison_totals = [category_totals.get(cat, 0) for cat in categories_to_compare]
+            # If user requested specific categories but none found in data
+            if not categories_to_compare and missing_categories:
+                return self._create_missing_data_response(missing_categories, expenses_df)
             
-            # Create simple bar chart
-            fig = go.Figure()
+            # If fewer than 2 categories found for a comparison, suggest alternatives
+            if len(categories_to_compare) < 2 and has_direct_comparison:
+                available_categories = expenses_df['category'].unique()
+                print(f"🔍 DEBUG: Only found {len(categories_to_compare)} categories for direct comparison")
+                return self._create_suggestion_response(
+                    query, categories_to_compare, missing_categories, available_categories
+                )
             
-            colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c']
-            
-            fig.add_trace(go.Bar(
-                x=categories_to_compare,
-                y=comparison_totals,
-                marker_color=colors[:len(categories_to_compare)],
-                hovertemplate='<b>%{x}</b><br>Total: $%{y:.2f}<extra></extra>',
-                text=[f'${amt:.2f}' for amt in comparison_totals],
-                textposition='auto',
-                textfont=dict(size=14, color='white')
-            ))
-            
-            total_comparison = sum(comparison_totals)
-            
-            fig.update_layout(
-                title=f"📊 Expense Comparison: {query.title()}",
-                xaxis_title="Categories",
-                yaxis_title="Amount ($)",
-                showlegend=False,
-                height=500,
-                plot_bgcolor='white',
-                font=dict(size=12)
-            )
-            
-            # Generate insights
-            insights = self._generate_comparison_insights(categories_to_compare, comparison_totals)
-            
-            return self._create_success_response(fig, "expense_comparison", 
-                                               f"Direct expense category comparison", insights)
-            
+            # If we have at least 2 categories, proceed with comparison
+            if len(categories_to_compare) >= 2:
+                print(f"📊 Creating simple comparison for: {categories_to_compare}")
+                
+                # Calculate totals for the specific categories
+                category_totals = expenses_df.groupby('category')['amount'].sum()
+                comparison_totals = [category_totals.get(cat, 0) for cat in categories_to_compare]
+                
+                # Create simple bar chart
+                fig = go.Figure()
+                
+                colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c']
+                
+                fig.add_trace(go.Bar(
+                    x=categories_to_compare,
+                    y=comparison_totals,
+                    marker_color=colors[:len(categories_to_compare)],
+                    hovertemplate='<b>%{x}</b><br>Total: $%{y:.2f}<extra></extra>',
+                    text=[f'${amt:.2f}' for amt in comparison_totals],
+                    textposition='auto',
+                    textfont=dict(size=14, color='white')
+                ))
+                
+                total_comparison = sum(comparison_totals)
+                
+                fig.update_layout(
+                    title=f"📊 Expense Comparison: {query.title()}",
+                    xaxis_title="Categories",
+                    yaxis_title="Amount ($)",
+                    showlegend=False,
+                    height=500,
+                    plot_bgcolor='white',
+                    font=dict(size=12)
+                )
+                
+                # Generate insights
+                insights = self._generate_comparison_insights(categories_to_compare, comparison_totals)
+                
+                return self._create_success_response(fig, "expense_comparison", 
+                                                   f"Direct expense category comparison", insights)
+            else:
+                # Fallback: not enough categories for comparison
+                available_categories = expenses_df['category'].unique()
+                return self._create_suggestion_response(
+                    query, categories_to_compare, missing_categories, available_categories
+                )
+                
         except Exception as e:
             print(f"❌ Simple expense comparison error: {e}")
             import traceback
@@ -144,9 +1047,16 @@ class LLMChartGenerator:
             return self._create_comprehensive_fallback(df, query)
 
     def _extract_specific_categories_from_query(self, query, expenses_df):
-        """Extract specific categories mentioned in comparison queries"""
+        """Extract specific categories mentioned in comparison queries with clear feedback"""
         query_lower = query.lower()
-    
+
+        # Get available categories from user's actual data
+        available_categories = expenses_df['category'].unique()
+        available_categories_lower = [str(cat).lower() for cat in available_categories]
+        
+        print(f"📋 User's available categories: {list(available_categories)}")
+        print(f"🔍 Query: '{query}'")
+
         # More precise category mapping with exact matching
         category_mapping = {
             'food': ['food', 'groceries', 'restaurant', 'dining', 'eat', 'meal', 'lunch', 'dinner', 'grocery'],
@@ -157,15 +1067,11 @@ class LLMChartGenerator:
             'healthcare': ['healthcare', 'medical', 'doctor', 'hospital', 'pharmacy', 'health', 'insurance', 'dental', 'clinic'],
             'other': ['other', 'miscellaneous', 'uncategorized']
         }
-    
-        # Get available categories from data
-        available_categories = expenses_df['category'].unique()
-        print(f"📋 Available categories: {list(available_categories)}")
-    
-        # Find categories mentioned in query
+
         found_categories = []
-    
-        # First, try exact word matching in the query
+        missing_categories = []
+
+        # First, try exact word matching in the query against user's actual categories
         for available_cat in available_categories:
             available_cat_lower = str(available_cat).lower()
             # Check if the category name appears as a whole word in the query
@@ -173,39 +1079,116 @@ class LLMChartGenerator:
                 if available_cat not in found_categories:
                     found_categories.append(available_cat)
                     print(f"✅ Found exact category match: {available_cat}")
-    
-        # If we found exact matches, use them
-        if found_categories:
-            return found_categories[:5]
-    
+
         # If no exact matches, use keyword mapping but be more strict
         for category_key, keywords in category_mapping.items():
             # Check if any keyword appears as a whole word in the query
             if any(f' {keyword} ' in f' {query_lower} ' for keyword in keywords):
                 print(f"🔍 Found keyword match for: {category_key}")
                 # Find matching actual categories in the data
+                matching_categories = []
                 for available_cat in available_categories:
                     available_cat_lower = str(available_cat).lower()
                     # Check if category contains any of the keywords
                     if any(keyword in available_cat_lower for keyword in keywords):
-                        if available_cat not in found_categories:
-                            found_categories.append(available_cat)
-                            print(f"✅ Mapped '{available_cat}' to '{category_key}'")
-                            break  # Only take one category per keyword group
-    
-        # If we found categories through keyword mapping, return them
-        if found_categories:
-            return found_categories[:5]
-    
-        # If no specific categories found but query has comparison words, use top categories
-        comparison_words = [' vs ', ' versus ', 'compare']
-        if any(word in query_lower for word in comparison_words):
+                        matching_categories.append(available_cat)
+                
+                if matching_categories:
+                    for cat in matching_categories:
+                        if cat not in found_categories:
+                            found_categories.append(cat)
+                            print(f"✅ Mapped '{category_key}' to user category: {cat}")
+                else:
+                    # No matching category found in user data
+                    if category_key not in missing_categories:
+                        missing_categories.append(category_key)
+                    print(f"❌ Keyword '{category_key}' found but no data available")
+
+        print(f"🔍 DEBUG: found_categories={found_categories}, missing_categories={missing_categories}")
+
+        # CRITICAL FIX: If we have missing categories and the query is a direct comparison,
+        # we should show the error instead of falling back to top categories
+        comparison_words = [' vs ', ' versus ', 'compare ']
+        has_comparison = any(word in query_lower for word in comparison_words)
+        
+        if has_comparison and missing_categories:
+            # If it's a direct comparison and we're missing categories, show error
+            print(f"🚫 Direct comparison with missing categories: {missing_categories}")
+            return found_categories, missing_categories
+        
+        # Only fall back to top categories if no specific categories were mentioned
+        if not found_categories and not missing_categories and has_comparison:
             top_categories = expenses_df.groupby('category')['amount'].sum().nlargest(3)
-            print(f"📊 Using top categories: {top_categories.index.tolist()}")
-            return top_categories.index.tolist()
-    
-        print("❌ No categories found for comparison")
-        return []
+            found_categories = top_categories.index.tolist()
+            print(f"📊 Using top categories: {found_categories}")
+            return found_categories, missing_categories
+
+        print(f"📊 Final result: found={found_categories}, missing={missing_categories}")
+        return found_categories, missing_categories
+
+    def _create_missing_data_response(self, missing_categories, expenses_df):
+        """Create helpful response when requested categories don't exist"""
+        available_categories = expenses_df['category'].unique()
+        
+        # Create more specific message based on what was missing
+        if len(missing_categories) == 1:
+            message = f"🚫 No '{missing_categories[0]}' transactions found in your data"
+        else:
+            message = f"🚫 No data available for: {', '.join(missing_categories)}"
+        
+        if len(available_categories) > 0:
+            message += f"\n\n📊 Your available expense categories: {', '.join(map(str, available_categories))}"
+            
+            # Suggest specific comparisons from available categories
+            if len(available_categories) >= 2:
+                message += f"\n\n💡 Try: 'compare {available_categories[0]} vs {available_categories[1]}'"
+            if len(available_categories) >= 3:
+                message += f"\n💡 Or: 'show {available_categories[0]} vs {available_categories[1]} vs {available_categories[2]}'"
+        
+        insights = [
+            f"Requested categories not found: {', '.join(missing_categories)}",
+            f"You have {len(available_categories)} expense categories available",
+            "Add transactions with the missing categories to enable comparison",
+            "Try comparing your available categories listed above"
+        ]
+        
+        return {
+            'success': False,
+            'error': message,
+            'chart_type': 'missing_data',
+            'analysis_notes': 'Requested categories not found',
+            'insights': insights,
+            'available_categories': [str(cat) for cat in available_categories]
+        }
+
+    def _create_suggestion_response(self, query, found_categories, missing_categories, available_categories):
+        """Suggest alternatives when exact matches aren't found"""
+        available_list = [str(cat) for cat in available_categories]
+        
+        message = "🔍 I found these categories in your query:\n"
+        if found_categories:
+            message += f"✅ Available: {', '.join(found_categories)}\n"
+        if missing_categories:
+            message += f"❌ Not available: {', '.join(missing_categories)}\n"
+        
+        message += f"\n📊 Your available categories: {', '.join(available_list[:5])}"
+        message += f"\n\n💡 Try: 'compare {', '.join(available_list[:2])}'"
+        
+        insights = [
+            f"Found {len(found_categories)} matching categories in your data",
+            f"Missing {len(missing_categories)} categories from your query",
+            f"Total categories available: {len(available_list)}",
+            "Try comparing the categories listed above"
+        ]
+        
+        return {
+            'success': False,
+            'error': message,
+            'chart_type': 'suggestion',
+            'analysis_notes': 'Category suggestions',
+            'insights': insights,
+            'available_categories': available_list
+        }
 
     def _generate_comparison_insights(self, categories, totals):
         """Generate insights for category comparison"""
@@ -235,13 +1218,18 @@ class LLMChartGenerator:
         
         return insights
 
+    # Keep all other existing methods (predictive, behavioral, optimization, etc.)
     def _create_predictive_analysis(self, df, query, depth):
         """Predictive analysis with machine learning"""
         try:
             # Prepare data for forecasting
             expenses_df = df[df['type'] == 'expense'].copy()
             if len(expenses_df) < 5:
-                return self._create_error_response("Need more data for accurate predictions")
+                return self._create_error_response(
+                    f"Need more data for accurate predictions. "
+                    f"You have {len(expenses_df)} expense transactions. "
+                    "Add at least 5 expense transactions for predictive analysis."
+                )
             
             # Create future dates for prediction
             last_date = df['date'].max()
@@ -347,6 +1335,13 @@ class LLMChartGenerator:
             if expenses_df.empty:
                 return self._create_error_response("No expense data for behavioral analysis")
             
+            if len(expenses_df) < 5:
+                return self._create_error_response(
+                    f"Need more expense data for behavioral analysis. "
+                    f"You have {len(expenses_df)} expense transactions. "
+                    "Add at least 5 expense transactions to identify patterns."
+                )
+            
             # Enhanced behavioral features
             expenses_df['day_of_week'] = expenses_df['date'].dt.day_name()
             expenses_df['is_weekend'] = expenses_df['date'].dt.dayofweek >= 5
@@ -434,6 +1429,9 @@ class LLMChartGenerator:
             expenses_df = df[df['type'] == 'expense'].copy()
             income_df = df[df['type'] == 'income']
             
+            if expenses_df.empty:
+                return self._create_error_response("No expense data for optimization analysis")
+            
             total_income = income_df['amount'].sum()
             total_expenses = expenses_df['amount'].sum()
             
@@ -519,6 +1517,13 @@ class LLMChartGenerator:
     def _create_comparative_analysis(self, df, query, depth):
         """Comparative analysis between different aspects"""
         try:
+            if len(df) < 3:
+                return self._create_error_response(
+                    f"Need more data for comparative analysis. "
+                    f"You have {len(df)} transactions. "
+                    "Add at least 3 transactions to enable comparisons."
+                )
+            
             fig = make_subplots(
                 rows=2, cols=2,
                 subplot_titles=(
@@ -649,86 +1654,6 @@ class LLMChartGenerator:
             print(f"❌ Categorical analysis error: {e}")
             return self._create_comprehensive_fallback(df, query)
 
-    def _create_temporal_analysis(self, df, query, depth):
-        """Temporal analysis over time"""
-        try:
-            fig = make_subplots(
-                rows=2, cols=2,
-                subplot_titles=(
-                    'Income & Expense Timeline',
-                    'Cumulative Cash Flow',
-                    'Daily Spending Pattern',
-                    'Monthly Trends'
-                ),
-                specs=[
-                    [{"type": "scatter", "colspan": 2}, None],
-                    [{"type": "scatter"}, {"type": "bar"}]
-                ]
-            )
-            
-            # 1. Income & Expense Timeline
-            daily_totals = df.groupby(['date', 'type'])['amount'].sum().unstack(fill_value=0)
-            
-            if 'income' in daily_totals.columns:
-                fig.add_trace(go.Scatter(
-                    x=daily_totals.index, y=daily_totals['income'],
-                    name='Income', line=dict(color='#2ecc71', width=2),
-                    mode='lines', hovertemplate='Date: %{x}<br>Income: $%{y:.2f}<extra></extra>'
-                ), row=1, col=1)
-            
-            if 'expense' in daily_totals.columns:
-                fig.add_trace(go.Scatter(
-                    x=daily_totals.index, y=daily_totals['expense'],
-                    name='Expenses', line=dict(color='#e74c3c', width=2),
-                    mode='lines', hovertemplate='Date: %{x}<br>Expenses: $%{y:.2f}<extra></extra>'
-                ), row=1, col=1)
-            
-            # 2. Cumulative Cash Flow
-            df_sorted = df.sort_values('date')
-            df_sorted['cumulative_net'] = (
-                df_sorted[df_sorted['type'] == 'income']['amount'].cumsum() - 
-                df_sorted[df_sorted['type'] == 'expense']['amount'].cumsum()
-            ).fillna(method='ffill')
-            
-            fig.add_trace(go.Scatter(
-                x=df_sorted['date'], y=df_sorted['cumulative_net'],
-                name='Cumulative Net', line=dict(color='#3498db', width=3),
-                mode='lines', fill='tozeroy',
-                hovertemplate='Date: %{x}<br>Cumulative Net: $%{y:.2f}<extra></extra>'
-            ), row=2, col=1)
-            
-            # 3. Monthly Trends
-            df['month'] = df['date'].dt.to_period('M')
-            monthly_totals = df.groupby(['month', 'type'])['amount'].sum().unstack(fill_value=0)
-            monthly_totals.index = monthly_totals.index.astype(str)
-            
-            if 'income' in monthly_totals.columns:
-                fig.add_trace(go.Bar(
-                    x=monthly_totals.index.tolist(), y=monthly_totals['income'].tolist(),
-                    name='Monthly Income', marker_color='#2ecc71',
-                    hovertemplate='Month: %{x}<br>Income: $%{y:.2f}<extra></extra>'
-                ), row=2, col=2)
-            
-            fig.update_layout(
-                height=700,
-                title_text=f"⏰ AI Temporal Analysis: {query}",
-                showlegend=True
-            )
-            
-            temporal_insights = [
-                "Track your financial journey over time with multiple perspectives",
-                "Cumulative net worth shows your overall financial progress",
-                "Monthly trends help identify seasonal spending patterns",
-                "Daily patterns reveal your spending consistency"
-            ]
-            
-            return self._create_success_response(fig, "temporal_analysis", 
-                                               f"AI-powered temporal financial analysis", temporal_insights)
-            
-        except Exception as e:
-            print(f"❌ Temporal analysis error: {e}")
-            return self._create_comprehensive_fallback(df, query)
-
     def _create_risk_analysis(self, df, query, depth):
         """Risk assessment analysis"""
         try:
@@ -824,6 +1749,14 @@ class LLMChartGenerator:
     def _create_ai_dashboard(self, df, query, depth):
         """Advanced AI-powered comprehensive dashboard"""
         try:
+            # Check if we have enough data for meaningful dashboard
+            if len(df) < 3:
+                return self._create_error_response(
+                    f"Need more data for comprehensive dashboard. "
+                    f"You have {len(df)} transactions. "
+                    "Add at least 3 transactions to see meaningful insights."
+                )
+            
             # Calculate advanced metrics
             financial_health_score = self._calculate_financial_health(df)
             spending_efficiency = self._calculate_spending_efficiency(df)
@@ -908,34 +1841,6 @@ class LLMChartGenerator:
         except Exception as e:
             print(f"❌ AI dashboard error: {e}")
             return self._create_comprehensive_fallback(df, query)
-
-    def _analyze_query_intent(self, query):
-        """Enhanced query analysis with depth assessment"""
-        query_lower = query.lower()
-        
-        # First check for specific expense comparison
-        if self._is_specific_expense_comparison(query_lower):
-            return 'expense_comparison', 'medium'
-        
-        # Determine analysis depth based on query complexity
-        depth_keywords = {
-            'deep': ['analyze', 'comprehensive', 'detailed', 'thorough', 'in-depth'],
-            'medium': ['show', 'display', 'view', 'see', 'compare'],
-            'light': ['simple', 'basic', 'quick', 'overview']
-        }
-        
-        depth = 'medium'  # default
-        for level, keywords in depth_keywords.items():
-            if any(keyword in query_lower for keyword in keywords):
-                depth = level
-                break
-        
-        # Determine chart type
-        for chart_type, keywords in self.chart_types.items():
-            if any(keyword in query_lower for keyword in keywords):
-                return chart_type, depth
-        
-        return 'dashboard', depth
 
     def _forecast_categories(self, expenses_df, days):
         """Simple category forecasting"""

@@ -311,23 +311,19 @@
         return response.json();
       })
       .then((data) => {
+        console.log("📨 Server response:", data); // Debug log
         // Reset button
         generateBtn.innerHTML = originalText;
         generateBtn.disabled = false;
 
-        if (data.error) {
-          showAlert(data.error, "danger");
-          chartDiv.innerHTML = "";
-          return;
-        }
-
-        // Display chart and insights
+        // Display chart and insights - this now handles both success and error cases
         displayChartResult(data);
       })
       .catch((error) => {
+        console.error("❌ Fetch error:", error);
         generateBtn.innerHTML = originalText;
         generateBtn.disabled = false;
-        showAlert("Chart generation failed: " + error, "danger");
+        showAlert("Chart generation failed: " + error.message, "danger");
         chartDiv.innerHTML = "";
       });
   }
@@ -337,6 +333,57 @@
     const insightsPanel = document.getElementById("insightsPanel");
     const insightsContent = document.getElementById("insightsContent");
 
+    console.log("📊 Chart result data:", data); // Debug log
+
+    // Handle error cases with helpful UI
+    if (!data.success) {
+      let errorHtml = `
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> ${
+                      data.analysis_notes || "Data Not Available"
+                    }</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">${data.error.replace(/\n/g, "<br>")}</p>
+        `;
+
+      // Show available categories if provided
+      if (data.available_categories && data.available_categories.length > 0) {
+        errorHtml += `
+                <div class="mt-3 p-3 bg-light rounded">
+                    <h6><i class="fas fa-list"></i> Your Available Categories:</h6>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+            `;
+        data.available_categories.forEach((category) => {
+          errorHtml += `<span class="badge bg-primary">${category}</span>`;
+        });
+        errorHtml += `</div>`;
+
+        // Add suggestion for available categories
+        if (data.available_categories.length >= 2) {
+          errorHtml += `<div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb"></i> Try: "compare ${data.available_categories[0]} vs ${data.available_categories[1]}"
+                    </small>
+                </div>`;
+        }
+        errorHtml += `</div>`;
+      }
+
+      errorHtml += `</div></div>`;
+      chartDiv.innerHTML = errorHtml;
+
+      // Still show insights if available
+      if (data.insights && data.insights.length > 0) {
+        displayInsights(data.insights);
+      } else {
+        insightsPanel.style.display = "none";
+      }
+      return;
+    }
+
+    // Successful chart generation
     let html = `
         <div class="card border-success">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
@@ -375,14 +422,7 @@
 
     // Display insights if available
     if (data.insights && data.insights.length > 0) {
-      let insightsHtml = '<ul class="list-unstyled mb-0">';
-      data.insights.forEach((insight) => {
-        insightsHtml += `<li class="mb-2"><i class="fas fa-chevron-right text-primary me-2"></i> ${insight}</li>`;
-      });
-      insightsHtml += "</ul>";
-
-      insightsContent.innerHTML = insightsHtml;
-      insightsPanel.style.display = "block";
+      displayInsights(data.insights);
     } else {
       insightsPanel.style.display = "none";
     }
@@ -405,6 +445,19 @@
     }
   }
 
+  function displayInsights(insights) {
+    const insightsContent = document.getElementById("insightsContent");
+    const insightsPanel = document.getElementById("insightsPanel");
+
+    let insightsHtml = '<ul class="list-unstyled mb-0">';
+    insights.forEach((insight) => {
+      insightsHtml += `<li class="mb-2"><i class="fas fa-chevron-right text-primary me-2"></i> ${insight}</li>`;
+    });
+    insightsHtml += "</ul>";
+    insightsContent.innerHTML = insightsHtml;
+    insightsPanel.style.display = "block";
+  }
+
   function getChartIcon(chartType) {
     const icons = {
       advanced_timeline: "line",
@@ -421,7 +474,14 @@
       temporal_analysis: "clock",
       categorical_analysis: "chart-pie",
       risk_analysis: "exclamation-triangle",
-      ai_intelligence_dashboard: "tachometer-alt"
+      ai_intelligence_dashboard: "tachometer-alt",
+      insufficient_temporal_data: "calendar-times",
+      insufficient_predictive_data: "chart-line",
+      insufficient_behavioral_data: "brain",
+      no_temporal_data: "calendar",
+      missing_data: "exclamation-triangle",
+      suggestion: "lightbulb",
+      error: "exclamation-circle",
     };
     return icons[chartType] || "chart-line";
   }

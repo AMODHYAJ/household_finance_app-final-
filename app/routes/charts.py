@@ -92,7 +92,17 @@ def generate_ai_chart():
         transactions = Transaction.query.filter_by(user_id=current_user.id).all()
         
         if not transactions:
-            return jsonify({'error': 'No transactions found. Add some transactions to generate charts.'})
+            return jsonify({
+                'success': False,
+                'error': 'No transactions found. Add some transactions to generate charts.',
+                'chart_type': 'no_data',
+                'analysis_notes': 'No transaction data available',
+                'insights': [
+                    'Start by adding your first transaction',
+                    'Use the "Add Transaction" button to begin',
+                    'Once you have data, you can generate various charts'
+                ]
+            })
         
         transaction_data = [{
             'id': t.id,
@@ -112,7 +122,13 @@ def generate_ai_chart():
         
     except Exception as e:
         print(f"AI chart generation failed: {e}")
-        return jsonify({'error': f'Chart generation failed: {str(e)}'})
+        return jsonify({
+            'success': False,
+            'error': f'Chart generation failed: {str(e)}',
+            'chart_type': 'error',
+            'analysis_notes': 'System error occurred',
+            'insights': ['Please try a different query or try again later']
+        })
     
 @charts_bp.route('/debug-pie-data')
 @login_required
@@ -171,4 +187,3 @@ def debug_timeline_data():
         debug_info = {'error': 'No expense data'}
     
     return jsonify(debug_info)
-    
