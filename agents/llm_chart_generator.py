@@ -10,7 +10,7 @@ warnings.filterwarnings('ignore')
 
 class LLMChartGenerator:
     """
-    Complete Advanced AI chart generator with all methods
+    Complete Advanced AI chart generator with expense comparison functionality
     """
     
     def __init__(self):
@@ -21,6 +21,7 @@ class LLMChartGenerator:
             'comparative': ['compare', 'vs', 'versus', 'difference', 'against', 'relative'],
             'temporal': ['timeline', 'over time', 'history', 'progress', 'evolution', 'journey'],
             'categorical': ['category', 'breakdown', 'distribution', 'by type', 'segmentation'],
+            'expense_comparison': [' vs ', ' versus ', 'compare', 'difference between', 'food vs', 'shopping vs', 'transport vs', 'entertainment vs', 'bills vs', 'expense vs'],
             'risk': ['risk', 'alert', 'warning', 'danger', 'concern', 'problem'],
             'dashboard': ['dashboard', 'overview', 'summary', 'everything', 'complete']
         }
@@ -40,6 +41,10 @@ class LLMChartGenerator:
             
             print(f"🤖 Advanced AI Analysis - Query: '{query}', Type: {chart_type}, Depth: {analysis_depth}")
             
+            # Check if this is a specific expense comparison query
+            if self._is_specific_expense_comparison(query):
+                return self._create_simple_expense_comparison(df, query)
+            
             # Generate appropriate advanced chart
             if chart_type == 'predictive':
                 return self._create_predictive_analysis(df, query, analysis_depth)
@@ -53,6 +58,8 @@ class LLMChartGenerator:
                 return self._create_temporal_analysis(df, query, analysis_depth)
             elif chart_type == 'categorical':
                 return self._create_categorical_analysis(df, query, analysis_depth)
+            elif chart_type == 'expense_comparison':
+                return self._create_simple_expense_comparison(df, query)
             elif chart_type == 'risk':
                 return self._create_risk_analysis(df, query, analysis_depth)
             else:
@@ -63,6 +70,170 @@ class LLMChartGenerator:
             import traceback
             traceback.print_exc()
             return self._create_comprehensive_fallback(df, query)
+
+    def _is_specific_expense_comparison(self, query):
+        """Check if query is specifically asking to compare expense categories"""
+        query_lower = query.lower()
+        
+        # Check for direct comparison patterns
+        comparison_indicators = [' vs ', ' versus ', 'compare ']
+        category_indicators = ['food', 'shopping', 'transport', 'entertainment', 'bills', 'healthcare', 'utilities', 'groceries', 'restaurant', 'dining', 'movie', 'netflix', 'uber', 'taxi', 'gas', 'electricity', 'water', 'internet', 'phone']
+        
+        has_comparison = any(indicator in query_lower for indicator in comparison_indicators)
+        has_categories = any(category in query_lower for category in category_indicators)
+        
+        return has_comparison and has_categories
+
+    def _create_simple_expense_comparison(self, df, query):
+        """Create simple bar chart for specific expense category comparisons"""
+        try:
+            expenses_df = df[df['type'] == 'expense'].copy()
+            
+            if expenses_df.empty:
+                return self._create_error_response("No expense data available for comparison")
+            
+            # Extract specific categories mentioned in query
+            categories_to_compare = self._extract_specific_categories_from_query(query, expenses_df)
+            
+            if len(categories_to_compare) < 2:
+                return self._create_error_response(f"Could not find specific categories to compare in '{query}'. Try 'food vs shopping' or 'compare transport and entertainment'")
+            
+            print(f"📊 Creating simple comparison for: {categories_to_compare}")
+            
+            # Calculate totals for the specific categories
+            category_totals = expenses_df.groupby('category')['amount'].sum()
+            comparison_totals = [category_totals.get(cat, 0) for cat in categories_to_compare]
+            
+            # Create simple bar chart
+            fig = go.Figure()
+            
+            colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c']
+            
+            fig.add_trace(go.Bar(
+                x=categories_to_compare,
+                y=comparison_totals,
+                marker_color=colors[:len(categories_to_compare)],
+                hovertemplate='<b>%{x}</b><br>Total: $%{y:.2f}<extra></extra>',
+                text=[f'${amt:.2f}' for amt in comparison_totals],
+                textposition='auto',
+                textfont=dict(size=14, color='white')
+            ))
+            
+            total_comparison = sum(comparison_totals)
+            
+            fig.update_layout(
+                title=f"📊 Expense Comparison: {query.title()}",
+                xaxis_title="Categories",
+                yaxis_title="Amount ($)",
+                showlegend=False,
+                height=500,
+                plot_bgcolor='white',
+                font=dict(size=12)
+            )
+            
+            # Generate insights
+            insights = self._generate_comparison_insights(categories_to_compare, comparison_totals)
+            
+            return self._create_success_response(fig, "expense_comparison", 
+                                               f"Direct expense category comparison", insights)
+            
+        except Exception as e:
+            print(f"❌ Simple expense comparison error: {e}")
+            import traceback
+            traceback.print_exc()
+            return self._create_comprehensive_fallback(df, query)
+
+    def _extract_specific_categories_from_query(self, query, expenses_df):
+        """Extract specific categories mentioned in comparison queries"""
+        query_lower = query.lower()
+    
+        # More precise category mapping with exact matching
+        category_mapping = {
+            'food': ['food', 'groceries', 'restaurant', 'dining', 'eat', 'meal', 'lunch', 'dinner', 'grocery'],
+            'shopping': ['shopping', 'retail', 'store', 'amazon', 'buy', 'purchase', 'mall', 'shop'],
+            'transport': ['transport', 'transportation', 'uber', 'taxi', 'gas', 'fuel', 'bus', 'train', 'car', 'commute', 'metro', 'subway', 'lyft'],
+            'entertainment': ['entertainment', 'movie', 'netflix', 'game', 'hobby', 'fun', 'leisure', 'concert', 'music', 'streaming'],
+            'bills': ['bills', 'utilities', 'electricity', 'water', 'internet', 'phone', 'subscription', 'rent', 'mortgage', 'bill'],
+            'healthcare': ['healthcare', 'medical', 'doctor', 'hospital', 'pharmacy', 'health', 'insurance', 'dental', 'clinic'],
+            'other': ['other', 'miscellaneous', 'uncategorized']
+        }
+    
+        # Get available categories from data
+        available_categories = expenses_df['category'].unique()
+        print(f"📋 Available categories: {list(available_categories)}")
+    
+        # Find categories mentioned in query
+        found_categories = []
+    
+        # First, try exact word matching in the query
+        for available_cat in available_categories:
+            available_cat_lower = str(available_cat).lower()
+            # Check if the category name appears as a whole word in the query
+            if any(f' {word} ' in f' {query_lower} ' for word in available_cat_lower.split()):
+                if available_cat not in found_categories:
+                    found_categories.append(available_cat)
+                    print(f"✅ Found exact category match: {available_cat}")
+    
+        # If we found exact matches, use them
+        if found_categories:
+            return found_categories[:5]
+    
+        # If no exact matches, use keyword mapping but be more strict
+        for category_key, keywords in category_mapping.items():
+            # Check if any keyword appears as a whole word in the query
+            if any(f' {keyword} ' in f' {query_lower} ' for keyword in keywords):
+                print(f"🔍 Found keyword match for: {category_key}")
+                # Find matching actual categories in the data
+                for available_cat in available_categories:
+                    available_cat_lower = str(available_cat).lower()
+                    # Check if category contains any of the keywords
+                    if any(keyword in available_cat_lower for keyword in keywords):
+                        if available_cat not in found_categories:
+                            found_categories.append(available_cat)
+                            print(f"✅ Mapped '{available_cat}' to '{category_key}'")
+                            break  # Only take one category per keyword group
+    
+        # If we found categories through keyword mapping, return them
+        if found_categories:
+            return found_categories[:5]
+    
+        # If no specific categories found but query has comparison words, use top categories
+        comparison_words = [' vs ', ' versus ', 'compare']
+        if any(word in query_lower for word in comparison_words):
+            top_categories = expenses_df.groupby('category')['amount'].sum().nlargest(3)
+            print(f"📊 Using top categories: {top_categories.index.tolist()}")
+            return top_categories.index.tolist()
+    
+        print("❌ No categories found for comparison")
+        return []
+
+    def _generate_comparison_insights(self, categories, totals):
+        """Generate insights for category comparison"""
+        if len(categories) < 2:
+            return ["Need at least 2 categories for comparison"]
+        
+        insights = []
+        
+        # Find highest and lowest
+        max_idx = totals.index(max(totals))
+        min_idx = totals.index(min(totals))
+        
+        insights.append(f"💸 Highest spending: {categories[max_idx]} (${totals[max_idx]:.2f})")
+        insights.append(f"💰 Lowest spending: {categories[min_idx]} (${totals[min_idx]:.2f})")
+        
+        # Calculate ratio if possible
+        if min(totals) > 0:
+            ratio = max(totals) / min(totals)
+            insights.append(f"⚖️ Spending ratio: {ratio:.1f}x difference")
+        
+        # Add percentage breakdown
+        total = sum(totals)
+        if total > 0:
+            for i, category in enumerate(categories):
+                percentage = (totals[i] / total) * 100
+                insights.append(f"📈 {category}: ${totals[i]:.2f} ({percentage:.1f}%)")
+        
+        return insights
 
     def _create_predictive_analysis(self, df, query, depth):
         """Predictive analysis with machine learning"""
@@ -738,11 +909,13 @@ class LLMChartGenerator:
             print(f"❌ AI dashboard error: {e}")
             return self._create_comprehensive_fallback(df, query)
 
-    # ========== HELPER METHODS ==========
-    
     def _analyze_query_intent(self, query):
         """Enhanced query analysis with depth assessment"""
         query_lower = query.lower()
+        
+        # First check for specific expense comparison
+        if self._is_specific_expense_comparison(query_lower):
+            return 'expense_comparison', 'medium'
         
         # Determine analysis depth based on query complexity
         depth_keywords = {

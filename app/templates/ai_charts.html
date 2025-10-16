@@ -91,10 +91,15 @@
           </button>
           <button
             class="btn btn-outline-primary text-start"
-            onclick="setChartExample('compare food and shopping expenses')"
+            onclick="setChartExample('food vs shopping')"
           >
-            <i class="fas fa-balance-scale"></i> "compare food and shopping
-            expenses"
+            <i class="fas fa-balance-scale"></i> "food vs shopping"
+          </button>
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('transport vs entertainment')"
+          >
+            <i class="fas fa-exchange-alt"></i> "transport vs entertainment"
           </button>
         </div>
       </div>
@@ -178,6 +183,44 @@
             </div>
           </div>
         </div>
+
+        <!-- Expense Comparison Examples -->
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <strong>Expense Comparisons:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-warning btn-sm text-start"
+                onclick="setChartExample('food vs shopping vs transport')"
+              >
+                "food vs shopping vs transport"
+              </button>
+              <button
+                class="btn btn-outline-warning btn-sm text-start"
+                onclick="setChartExample('compare bills and entertainment')"
+              >
+                "compare bills and entertainment"
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <strong>Quick Analysis:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-info btn-sm text-start"
+                onclick="setChartExample('show food and shopping difference')"
+              >
+                "show food and shopping difference"
+              </button>
+              <button
+                class="btn btn-outline-info btn-sm text-start"
+                onclick="setChartExample('compare my top categories')"
+              >
+                "compare my top categories"
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -204,6 +247,10 @@
           <li>
             <i class="fas fa-tachometer-alt text-info"></i>
             <strong>Dashboards:</strong> Comprehensive overviews
+          </li>
+          <li>
+            <i class="fas fa-balance-scale text-warning"></i>
+            <strong>Expense Comparisons:</strong> Category vs category
           </li>
         </ul>
       </div>
@@ -294,9 +341,7 @@
         <div class="card border-success">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="fas fa-chart-${getChartIcon(
-                      data.chart_type
-                    )}"></i> 
+                    <i class="fas fa-${getChartIcon(data.chart_type)}"></i> 
                     ${data.title}
                 </h5>
                 <span class="badge bg-light text-dark">${
@@ -365,9 +410,18 @@
       advanced_timeline: "line",
       advanced_category: "pie",
       comprehensive_dashboard: "dashboard",
+      expense_comparison: "balance-scale",
       line: "line",
       bar: "bar",
       pie: "pie",
+      predictive_analysis: "crystal-ball",
+      behavioral_analysis: "brain",
+      optimization_analysis: "lightbulb",
+      comparative_analysis: "chart-bar",
+      temporal_analysis: "clock",
+      categorical_analysis: "chart-pie",
+      risk_analysis: "exclamation-triangle",
+      ai_intelligence_dashboard: "tachometer-alt"
     };
     return icons[chartType] || "chart-line";
   }
