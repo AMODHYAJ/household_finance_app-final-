@@ -11,6 +11,9 @@ from utils.category_standardizer import category_standardizer
 # Set Tesseract path to your specific installation
 pytesseract.pytesseract.tesseract_cmd = r"E:\SLIT\Y3S1\IRWA\Tesseract-OCR\tesseract.exe"
 
+# Add Poppler path (update this to your actual poppler path)
+POPPLER_PATH = r"E:\SLIT\Y3S1\IRWA\poppler-25.07.0\Library\bin"
+
 def check_tesseract_available():
     """Check if Tesseract is available at the specified path"""
     try:
@@ -66,8 +69,12 @@ def extract_text_from_pdf(pdf_path):
         if not check_tesseract_available():
             return ""
             
-        # Convert PDF to images
-        images = convert_from_path(pdf_path, dpi=200)
+        # Convert PDF to images with poppler path
+        if os.path.exists(POPPLER_PATH):
+            images = convert_from_path(pdf_path, dpi=200, poppler_path=POPPLER_PATH)
+        else:
+            # Try without poppler path (might work if poppler is in PATH)
+            images = convert_from_path(pdf_path, dpi=200)
         
         all_text = ""
         for i, image in enumerate(images):

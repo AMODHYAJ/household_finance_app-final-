@@ -1,72 +1,234 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-chart-bar"></i> Charts & Visualizations</h2>
-        <hr>
-    </div>
+  <div class="col-12">
+    <h2><i class="fas fa-chart-bar"></i> Financial Charts</h2>
+    <p class="text-muted">
+      Visualize your financial data with interactive charts
+    </p>
+    <hr />
+  </div>
 </div>
 
+<!-- Pie Chart Section -->
 <div class="row">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5>Expenses by Category</h5>
-            </div>
-            <div class="card-body">
-                <div id="expenses-chart"></div>
-            </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-pie"></i> Expenses by Category - Pie Chart
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="expenses-pie-chart">
+          <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-primary"></i>
+            <p class="mt-2">Loading pie chart...</p>
+          </div>
         </div>
+      </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5>Income vs Expenses</h5>
-            </div>
-            <div class="card-body">
-                <div id="income-expense-chart"></div>
-            </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-bar"></i> Expenses by Category - Bar Chart
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="expenses-bar-chart">
+          <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-primary"></i>
+            <p class="mt-2">Loading bar chart...</p>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-{% endblock %}
+<!-- Other Charts Section -->
+<div class="row mt-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-balance-scale"></i> Income vs Expenses
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="income-expense-chart">
+          <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-primary"></i>
+            <p class="mt-2">Loading chart...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-{% block scripts %}
+  <!-- In your charts.html, change this section: -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-line"></i> Spending Timeline
+        </h5>
+      </div>
+      <div class="card-body">
+        <div id="spending-timeline-chart">
+          <!-- Changed from timeline-chart -->
+          <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin text-primary"></i>
+            <p class="mt-2">Loading timeline...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch chart data
-    fetch('/api/chart-data')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('expenses-chart').innerHTML = 
-                    '<p class="text-muted">' + data.error + '</p>';
-                document.getElementById('income-expense-chart').innerHTML = 
-                    '<p class="text-muted">' + data.error + '</p>';
-                return;
-            }
-            
-            // Render expenses chart
-            if (data.expenses_by_category) {
-                const expensesData = JSON.parse(data.expenses_by_category);
-                Plotly.newPlot('expenses-chart', expensesData.data, expensesData.layout);
-            }
-            
-            // Render income vs expenses chart
-            if (data.income_vs_expenses) {
-                const incomeExpenseData = JSON.parse(data.income_vs_expenses);
-                Plotly.newPlot('income-expense-chart', incomeExpenseData.data, incomeExpenseData.layout);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching chart data:', error);
-            document.getElementById('expenses-chart').innerHTML = 
-                '<p class="text-muted">Error loading charts</p>';
-            document.getElementById('income-expense-chart').innerHTML = 
-                '<p class="text-muted">Error loading charts</p>';
-        });
-});
+  document.addEventListener("DOMContentLoaded", function () {
+    loadBasicCharts();
+  });
+
+  function loadBasicCharts() {
+    fetch("/api/chart-data")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Chart data received:", data);
+
+        if (data.error) {
+          showChartError(data.error);
+          return;
+        }
+
+        // Render Pie Chart
+        if (data.expenses_pie_chart) {
+          try {
+            const chartData = JSON.parse(data.expenses_pie_chart);
+            // Clear loading content first
+            document.getElementById("expenses-pie-chart").innerHTML = "";
+            Plotly.newPlot(
+              "expenses-pie-chart",
+              chartData.data,
+              chartData.layout,
+              {
+                responsive: true,
+                displayModeBar: true,
+              }
+            );
+          } catch (e) {
+            console.error("Error rendering pie chart:", e);
+            document.getElementById("expenses-pie-chart").innerHTML =
+              '<div class="alert alert-warning">Could not display pie chart</div>';
+          }
+        } else {
+          document.getElementById("expenses-pie-chart").innerHTML =
+            '<div class="alert alert-info">No expense data available for pie chart</div>';
+        }
+
+        // Render Bar Chart
+        if (data.expenses_bar_chart) {
+          try {
+            const chartData = JSON.parse(data.expenses_bar_chart);
+            // Clear loading content first
+            document.getElementById("expenses-bar-chart").innerHTML = "";
+            Plotly.newPlot(
+              "expenses-bar-chart",
+              chartData.data,
+              chartData.layout,
+              {
+                responsive: true,
+                displayModeBar: true,
+              }
+            );
+          } catch (e) {
+            console.error("Error rendering bar chart:", e);
+            document.getElementById("expenses-bar-chart").innerHTML =
+              '<div class="alert alert-warning">Could not display bar chart</div>';
+          }
+        } else {
+          document.getElementById("expenses-bar-chart").innerHTML =
+            '<div class="alert alert-info">No expense data available for bar chart</div>';
+        }
+
+        // Render Income vs Expenses Chart
+        if (data.income_vs_expenses) {
+          try {
+            const chartData = JSON.parse(data.income_vs_expenses);
+            // Clear loading content first
+            document.getElementById("income-expense-chart").innerHTML = "";
+            Plotly.newPlot(
+              "income-expense-chart",
+              chartData.data,
+              chartData.layout,
+              {
+                responsive: true,
+                displayModeBar: true,
+              }
+            );
+          } catch (e) {
+            console.error("Error rendering income vs expenses chart:", e);
+            document.getElementById("income-expense-chart").innerHTML =
+              '<div class="alert alert-warning">Could not display income vs expenses chart</div>';
+          }
+        } else {
+          document.getElementById("income-expense-chart").innerHTML =
+            '<div class="alert alert-info">No income/expense data available</div>';
+        }
+
+        // In your loadBasicCharts function, add:
+        if (data.spending_timeline) {
+          try {
+            const chartData = JSON.parse(data.spending_timeline);
+            document.getElementById("spending-timeline-chart").innerHTML = "";
+            Plotly.newPlot(
+              "spending-timeline-chart",
+              chartData.data,
+              chartData.layout,
+              {
+                responsive: true,
+                displayModeBar: true,
+              }
+            );
+          } catch (e) {
+            console.error("Error rendering timeline chart:", e);
+            document.getElementById("spending-timeline-chart").innerHTML =
+              '<div class="alert alert-warning">Could not display timeline chart</div>';
+          }
+        } else {
+          document.getElementById("spending-timeline-chart").innerHTML =
+            '<div class="alert alert-info">No timeline data available</div>';
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching chart data:", error);
+        showChartError("Failed to load charts. Please try again.");
+      });
+  }
+
+  function showChartError(message) {
+    const charts = [
+      "expenses-pie-chart",
+      "expenses-bar-chart",
+      "income-expense-chart",
+      "timeline-chart",
+    ];
+    charts.forEach((chartId) => {
+      document.getElementById(
+        chartId
+      ).innerHTML = `<div class="alert alert-info text-center">${message}</div>`;
+    });
+  }
 </script>
 {% endblock %}

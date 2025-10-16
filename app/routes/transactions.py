@@ -2,6 +2,7 @@ import re
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
 import pytesseract
+from agents.nlp_search import SemanticSearchEngine
 from app import db
 from app.models.forms import TransactionForm
 from core.database import Transaction
@@ -188,6 +189,7 @@ def ocr_upload():
         
         print(f"🔍 Running OCR on file: {filename}")
         
+        # Use the updated extract_text_from_image function
         text = extract_text_from_image(file_path)
         if not text or text.strip() == "":
             if os.path.exists(file_path):
@@ -239,7 +241,7 @@ def ocr_upload():
         if parsed.get('note') and parsed['note'] != "Receipt scan":
             try:
                 ai_type = collector.suggest_transaction_type(parsed['note'])
-                parsed['type'] = ai_type  # CHANGED: t_type → type
+                parsed['type'] = ai_type
                 print(f"🤖 AI transaction type: {ai_type}")
             except Exception as e:
                 print(f"AI transaction type failed: {e}")
@@ -255,7 +257,7 @@ def ocr_upload():
             'date': parsed['date'],
             'note': parsed.get('note', ''),
             'category': parsed['category'],
-            'type': parsed['type'],  # CHANGED: t_type → type
+            'type': parsed['type'],
             'success': True,
             'message': f'Successfully extracted: ${parsed["amount"]:.2f} for {parsed["category"]}'
         })
@@ -265,7 +267,7 @@ def ocr_upload():
             os.remove(file_path)
         print(f"❌ OCR processing error: {e}")
         return jsonify({'error': f'OCR processing failed: {str(e)}'}), 500
-
+   
 # ------------------- SEARCH TRANSACTIONS -------------------
 @transactions_bp.route('/api/search-transactions')
 @login_required
@@ -510,8 +512,77 @@ def debug_data_flow():
     
     return jsonify(debug_info)
 
-@transactions_bp.route('/ai-search-demo')
+# ------------------- AI SEARCH PAGE -------------------
+@transactions_bp.route('/ai-search')
 @login_required
-def ai_search_demo():
-    """Demo page for AI-powered search"""
-    return render_template('ai_search.html', title='AI Transaction Search')
+def ai_search_page():
+    """AI Search page"""
+    return render_template('ai_search.html', title='AI Search')
+
+@transactions_bp.route('/api/ai-search')
+@login_required
+def ai_search():
+    """Enhanced AI-powered semantic search"""
+    query = request.args.get('q', '').strip().lower()
+    
+    if not query:
+        return jsonify({'error': 'Please enter a search query'})
+    
+    # Get user transactions
+    transactions = collector.get_user_transactions(current_user.id)
+    
+    if not transactions:
+        return jsonify({'error': 'No transactions found'})
+    
+    # Convert to dictionary format for search
+    transaction_dicts = []
+    for t in transactions:
+        transaction_dicts.append({
+            'id': t.id,
+            'date': t.date,
+            'type': t.type,
+            'category': t.category,
+            'amount': float(t.amount),
+            'note': t.note or ''
+        })
+    
+    try:
+        # Use semantic search engine
+        search_engine = SemanticSearchEngine()
+        results = search_engine.natural_language_search(query, transaction_dicts)
+        
+        # Get anomalies for highlighting
+        anomalies = collector.detect_anomalies(current_user.id)
+        anomaly_ids = [a['id'] for a in anomalies]
+        
+        # Get AI explanations
+        llm_explanations = {}
+        for a in anomalies:
+            txn = Transaction.query.get(a['id'])
+            if txn:
+                llm_explanations[txn.id] = collector.explain_anomaly(txn)
+        
+        # Format results
+        formatted_results = []
+        for result in results:
+            formatted_results.append({
+                "id": result['id'],
+                "date": result['date'].strftime('%Y-%m-%d') if hasattr(result['date'], 'strftime') else str(result['date']),
+                "type": result['type'],
+                "category": result['category'],
+                "amount": result['amount'],
+                "note": result['note'] or '-',
+                "anomaly": result['id'] in anomaly_ids,
+                "ai_insight": llm_explanations.get(result['id'], '-'),
+                "similarity_score": result.get('similarity_score', 0),
+                "match_reason": result.get('match_reason', 'relevant match')
+            })
+        
+        print(f"🔍 AI Search: '{query}' → {len(formatted_results)} results")
+        
+        return jsonify({"results": formatted_results})
+    
+    except Exception as e:
+        print(f"❌ AI Search Error: {e}")
+        return jsonify({'error': f'Search failed: {str(e)}'}), 500
+        

@@ -40,3 +40,13 @@ class Transaction(db.Model):
     
     def __repr__(self):
         return f'<Transaction {self.id} {self.type} {self.amount}>'
+    
+# Add to your models
+class UserBudget(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    budgets = db.Column(db.JSON, nullable=False, default=dict)  # Store as JSON
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('budgets', lazy=True))

@@ -1,208 +1,446 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-chart-pie"></i> Budget Management</h2>
-        <hr>
-    </div>
+  <div class="col-12">
+    <h2><i class="fas fa-chart-pie"></i> Budget Management</h2>
+    <hr />
+  </div>
 </div>
+
+<!-- Budget Alerts Section -->
+{% if budget_alerts %}
+<div class="row mb-3">
+  <div class="col-12">
+    <div class="card border-warning">
+      <div class="card-header bg-warning text-dark">
+        <h6 class="mb-0">
+          <i class="fas fa-exclamation-triangle"></i> Budget Alerts
+        </h6>
+      </div>
+      <div class="card-body">
+        {% for alert in budget_alerts %}
+        <div
+          class="alert alert-{{ 'danger' if alert.type == 'over_budget' else 'warning' }} mb-2"
+        >
+          <i
+            class="fas fa-{{ 'exclamation-circle' if alert.type == 'over_budget' else 'info-circle' }}"
+          ></i>
+          {{ alert.message }}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- Budget Info Header -->
 <div class="row mb-4">
-    <div class="col-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-info-circle"></i> Budget Tracking Info</h6>
-                        <p class="mb-0">
-                            <small class="text-muted">
-                                Tracking {{ total_expenses }} expense transactions
-                                {% if budget_progress %}
-                                across {{ budget_progress.keys()|length }} categories
-                                {% endif %}
-                            </small>
-                        </p>
-                    </div>
-                    <div class="col-md-6 text-end">
-                        <div class="btn-group">
-                            <a href="{{ url_for('budget.budget_debug') }}" class="btn btn-sm btn-outline-info">
-                                <i class="fas fa-bug"></i> Debug View
-                            </a>
-                            <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-plus"></i> Add Expense
-                            </a>
-                        </div>
-                    </div>
-                </div>
+  <div class="col-12">
+    <div class="card bg-light">
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6><i class="fas fa-info-circle"></i> Budget Tracking Info</h6>
+            <p class="mb-0">
+              <small class="text-muted">
+                Tracking {{ total_expenses }} expense transactions {% if
+                budget_progress %} across {{ budget_progress.keys()|length }}
+                categories {% endif %}
+              </small>
+            </p>
+          </div>
+          <div class="col-md-6 text-end">
+            <div class="btn-group">
+              <button
+                class="btn btn-sm btn-outline-success"
+                data-bs-toggle="modal"
+                data-bs-target="#budgetSettingsModal"
+              >
+                <i class="fas fa-edit"></i> Customize Budgets
+              </button>
+              <a
+                href="{{ url_for('budget.budget_debug') }}"
+                class="btn btn-sm btn-outline-info"
+              >
+                <i class="fas fa-bug"></i> Debug View
+              </a>
+              <a
+                href="{{ url_for('transactions.add_transaction') }}"
+                class="btn btn-sm btn-primary"
+              >
+                <i class="fas fa-plus"></i> Add Expense
+              </a>
             </div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
 <div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Monthly Budget Progress</h5>
-                {% if not budget_progress %}
-                <span class="badge bg-warning">No expense data</span>
-                {% endif %}
+  <div class="col-12">
+    <div class="card">
+      <div
+        class="card-header d-flex justify-content-between align-items-center"
+      >
+        <h5 class="mb-0">Monthly Budget Progress</h5>
+        {% if not budget_progress %}
+        <span class="badge bg-warning">No expense data</span>
+        {% endif %}
+      </div>
+      <div class="card-body">
+        {% if budget_progress %}
+        <div class="row">
+          {% for category, data in budget_progress.items() %}
+          <div
+            class="col-md-6 mb-3 p-3 border rounded budget-category-card"
+            data-progress="{{ data.progress }}"
+          >
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0 text-capitalize">
+                {{ category }}
+                <small class="text-muted"
+                  >({{ data.transaction_count }} transactions)</small
+                >
+              </h6>
+              <span class="badge bg-{{ data.status }}">
+                ${{ "%.2f"|format(data.spent) }} / ${{
+                "%.2f"|format(data.budget) }}
+              </span>
             </div>
-            <div class="card-body">
-                {% if budget_progress %}
-                <div class="row">
-                    {% for category, data in budget_progress.items() %}
-                    <div class="col-md-6 mb-3 p-3 border rounded budget-category-card" data-progress="{{ data.progress }}">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="mb-0 text-capitalize">
-                                {{ category }} 
-                                <small class="text-muted">({{ data.transaction_count }} transactions)</small>
-                            </h6>
-                            <span class="badge bg-{{ data.status }}">
-                                ${{ "%.2f"|format(data.spent) }} / ${{ "%.2f"|format(data.budget) }}
-                            </span>
-                        </div>
-                        <div class="progress mb-2 progress-custom">
-                            <div class="progress-bar bg-{{ data.status }}" 
-                                 role="progressbar" 
-                                 aria-valuenow="{{ data.progress }}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="100">
-                                {{ "%.1f"|format(data.progress) }}%
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <small class="text-muted">
-                                ${{ "%.2f"|format(data.remaining) }} remaining
-                            </small>
-                            <small class="text-{{ data.status }}">
-                                {% if data.progress >= 100 %}
-                                ❌ Over budget
-                                {% elif data.progress >= 80 %}
-                                ⚠️ Near limit
-                                {% else %}
-                                ✅ On track
-                                {% endif %}
-                            </small>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <!-- Total Spending Summary -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <h6><i class="fas fa-chart-bar"></i> Spending Summary</h6>
-                            {% set total_spent = budget_progress.values() | sum(attribute='spent') %}
-                            {% set total_budget = budget_progress.values() | sum(attribute='budget') %}
-                            <p class="mb-1">
-                                Total Spent: <strong>${{ "%.2f"|format(total_spent) }}</strong> 
-                                of <strong>${{ "%.2f"|format(total_budget) }}</strong> budget
-                                ({{ "%.1f"|format((total_spent/total_budget)*100) if total_budget > 0 else 0 }}%)
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <div class="text-center py-4">
-                    <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No Budget Data Available</h5>
-                    <p class="text-muted mb-3">
-                        Add some expense transactions to see budget tracking in action.
-                        The system will automatically categorize your spending.
-                    </p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <a href="{{ url_for('transactions.add_transaction') }}" class="btn btn-primary">
-                            <i class="fas fa-plus-circle"></i> Add Expense
-                        </a>
-                        <a href="/add-test-data" class="btn btn-outline-secondary">
-                            <i class="fas fa-vial"></i> Add Test Data
-                        </a>
-                    </div>
-                </div>
-                {% endif %}
+            <div class="progress mb-2 progress-custom">
+              <div
+                class="progress-bar bg-{{ data.status }}"
+                role="progressbar"
+                aria-valuenow="{{ data.progress }}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                {{ "%.1f"|format(data.progress) }}%
+              </div>
             </div>
+            <div class="d-flex justify-content-between">
+              <small class="text-muted">
+                ${{ "%.2f"|format(data.remaining) }} remaining
+              </small>
+              <small class="text-{{ data.status }}">
+                {% if data.progress >= 100 %} ❌ Over budget {% elif
+                data.progress >= 80 %} ⚠️ Near limit {% else %} ✅ On track {%
+                endif %}
+              </small>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+
+        <!-- Total Spending Summary -->
+        <div class="row mt-4">
+          <div class="col-12">
+            <div class="alert alert-info">
+              <h6><i class="fas fa-chart-bar"></i> Spending Summary</h6>
+              {% set total_spent = budget_progress.values() |
+              sum(attribute='spent') %} {% set total_budget =
+              budget_progress.values() | sum(attribute='budget') %}
+              <p class="mb-1">
+                Total Spent:
+                <strong>${{ "%.2f"|format(total_spent) }}</strong> of
+                <strong>${{ "%.2f"|format(total_budget) }}</strong> budget ({{
+                "%.1f"|format((total_spent/total_budget)*100) if total_budget >
+                0 else 0 }}%)
+              </p>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No Budget Data Available</h5>
+          <p class="text-muted mb-3">
+            Add some expense transactions to see budget tracking in action. The
+            system will automatically categorize your spending.
+          </p>
+          <div class="d-flex justify-content-center gap-2">
+            <a
+              href="{{ url_for('transactions.add_transaction') }}"
+              class="btn btn-primary"
+            >
+              <i class="fas fa-plus-circle"></i> Add Expense
+            </a>
+            <a href="/add-test-data" class="btn btn-outline-secondary">
+              <i class="fas fa-vial"></i> Add Test Data
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
     </div>
+  </div>
 </div>
 
 <!-- Budget Settings -->
 <div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-cog"></i> Budget Settings</h5>
-            </div>
-            <div class="card-body">
-                <p class="text-muted mb-3">
-                    <i class="fas fa-info-circle"></i> 
-                    The system automatically categorizes your expenses and tracks them against these default budgets.
-                </p>
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Category</th>
-                                <th>Monthly Budget</th>
-                                <th>Keywords & Examples</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for category, amount in default_budgets.items() %}
-                            <tr>
-                                <td class="text-capitalize fw-bold">{{ category }}</td>
-                                <td>${{ "%.2f"|format(amount) }}</td>
-                                <td>
-                                    <small class="text-muted">
-                                        {% if category == 'food' %}groceries, restaurant, dining, supermarket{% endif %}
-                                        {% if category == 'shopping' %}amazon, retail, purchase, store{% endif %}
-                                        {% if category == 'bills' %}electricity, internet, phone, subscription{% endif %}
-                                        {% if category == 'entertainment' %}netflix, gaming, movies, spotify, clash of clans{% endif %}
-                                        {% if category == 'transport' %}gas, fuel, uber, taxi, bus{% endif %}
-                                    </small>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-cog"></i> Budget Settings</h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          <i class="fas fa-info-circle"></i>
+          The system automatically categorizes your expenses and tracks them
+          against your custom budgets. Click "Customize Budgets" above to change
+          these amounts.
+        </p>
+        <!-- In your budget.html template, update the table -->
+        <div class="table-responsive">
+          <table class="table table-sm table-striped">
+            <thead class="table-light">
+              <tr>
+                <th>Category</th>
+                <th>Monthly Budget</th>
+                <th>Keywords & Examples</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for category, amount in default_budgets.items() %}
+              <tr>
+                <td class="text-capitalize fw-bold">{{ category }}</td>
+                <td>${{ "%.2f"|format(amount) }}</td>
+                <td>
+                  <small class="text-muted">
+                    {% if category == 'food' %}groceries, restaurant, dining,
+                    supermarket{% endif %} {% if category == 'shopping'
+                    %}amazon, retail, purchase, store{% endif %} {% if category
+                    == 'bills' %}electricity, internet, phone, subscription{%
+                    endif %} {% if category == 'entertainment' %}netflix,
+                    gaming, movies, spotify, clash of clans{% endif %} {% if
+                    category == 'transport' %}gas, fuel, uber, taxi, bus{% endif
+                    %} {% if category == 'other' %}healthcare, medical,
+                    miscellaneous, uncategorized{% endif %}
+                  </small>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- Budget Customization Modal -->
+<div
+  class="modal fade"
+  id="budgetSettingsModal"
+  tabindex="-1"
+  aria-labelledby="budgetSettingsModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="budgetSettingsModalLabel">
+          Customize Budgets
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="budgetSettingsForm">
+          {% for category, amount in default_budgets.items() %}
+          <div class="mb-3">
+            <label
+              for="{{ category }}_budget"
+              class="form-label text-capitalize"
+              >{{ category }} Budget</label
+            >
+            <div class="input-group">
+              <span class="input-group-text">$</span>
+              <input
+                type="number"
+                class="form-control"
+                id="{{ category }}_budget"
+                name="{{ category }}_budget"
+                value="{{ amount }}"
+                step="10"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+          {% endfor %}
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="saveBudgetSettings">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-/* Custom CSS to handle progress bars without inline styles */
-.progress-custom {
+  /* Custom CSS to handle progress bars without inline styles */
+  .progress-custom {
     height: 20px;
-}
-</style>
-{% endblock %}
+  }
 
-{% block scripts %}
+  .budget-category-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .budget-category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+</style>
+{% endblock %} {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Budget page loaded successfully');
-    
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("Budget page loaded successfully");
+
     // Set progress bar widths dynamically using JavaScript
-    const progressBars = document.querySelectorAll('.progress-bar');
-    progressBars.forEach(bar => {
-        const progressValue = bar.getAttribute('aria-valuenow');
-        bar.style.width = progressValue + '%';
+    const progressBars = document.querySelectorAll(".progress-bar");
+    progressBars.forEach((bar) => {
+      const progressValue = bar.getAttribute("aria-valuenow");
+      bar.style.width = progressValue + "%";
     });
-    
+
     // Add click tracking for analytics
-    const budgetCards = document.querySelectorAll('.budget-category-card');
-    budgetCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const category = this.querySelector('h6').textContent.split(' ')[0];
-            const progress = this.getAttribute('data-progress');
-            console.log(`Budget category clicked: ${category} (${progress}%)`);
-        });
+    const budgetCards = document.querySelectorAll(".budget-category-card");
+    budgetCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        const category = this.querySelector("h6").textContent.split(" ")[0];
+        const progress = this.getAttribute("data-progress");
+        console.log(`Budget category clicked: ${category} (${progress}%)`);
+      });
     });
-});
+
+    // Modal event listeners using vanilla JavaScript
+    const budgetModal = document.getElementById("budgetSettingsModal");
+    const saveButton = document.getElementById("saveBudgetSettings");
+
+    if (budgetModal) {
+      budgetModal.addEventListener("show.bs.modal", function () {
+        console.log("Budget modal opened");
+        loadUserBudgets();
+      });
+    }
+
+    if (saveButton) {
+      saveButton.addEventListener("click", function () {
+        saveBudgetSettings();
+      });
+    }
+  });
+
+  function loadUserBudgets() {
+    console.log("Loading budget settings...");
+    // The form is pre-populated with current values from the template
+  }
+
+  function saveBudgetSettings() {
+    const form = document.getElementById("budgetSettingsForm");
+    const budgets = {};
+
+    // Collect ALL budget values from the form
+    const inputs = form.querySelectorAll('input[type="number"]');
+    let isValid = true;
+
+    inputs.forEach((input) => {
+      const value = parseFloat(input.value);
+      if (isNaN(value) || value < 0) {
+        isValid = false;
+        input.classList.add("is-invalid");
+      } else {
+        input.classList.remove("is-invalid");
+        const category = input.id.replace("_budget", "");
+        budgets[category] = value;
+      }
+    });
+
+    if (!isValid) {
+      showAlert(
+        "Please enter valid budget amounts (positive numbers only)",
+        "danger"
+      );
+      return;
+    }
+
+    console.log("Saving ALL budgets:", budgets);
+
+    // Send to server
+    fetch("/api/update-budget", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(budgets),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Server response:", data);
+        if (data.success) {
+          // Close modal using Bootstrap's modal method
+          const modal = bootstrap.Modal.getInstance(
+            document.getElementById("budgetSettingsModal")
+          );
+          if (modal) {
+            modal.hide();
+          }
+          showAlert("Budgets updated successfully!", "success");
+          setTimeout(() => {
+            location.reload(); // Refresh to see updated budgets
+          }, 1500);
+        } else {
+          showAlert(
+            "Error updating budgets: " + (data.error || "Unknown error"),
+            "danger"
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        showAlert("Error updating budgets: " + error.message, "danger");
+      });
+  }
+
+  function showAlert(message, type) {
+    // Remove any existing alerts
+    const existingAlerts = document.querySelectorAll(".alert-dismissible");
+    existingAlerts.forEach((alert) => alert.remove());
+
+    const alertDiv = document.createElement("div");
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText =
+      "position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        alertDiv.remove();
+      }
+    }, 5000);
+  }
 </script>
 {% endblock %}

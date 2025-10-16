@@ -1,137 +1,241 @@
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-chart-line"></i> AI-Powered Charts</h2>
-        <p class="text-muted">Generate charts using natural language requests</p>
-        <hr>
-    </div>
+  <div class="col-12">
+    <h2><i class="fas fa-chart-line"></i> AI-Powered Charts</h2>
+    <p class="text-muted">Generate charts using natural language requests</p>
+    <hr />
+  </div>
 </div>
 
 <div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-magic"></i> Chart Generator</h5>
-            </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label for="chartQuery" class="form-label">What would you like to visualize?</label>
-                    <input type="text" class="form-control form-control-lg" id="chartQuery" 
-                           placeholder="Try: 'show my spending by category' or 'income vs expenses over time'">
-                    <div class="form-text">The AI will choose the best chart type and analyze your data</div>
-                </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <button class="btn btn-primary btn-lg" onclick="generateChart()" id="generateBtn">
-                        <i class="fas fa-magic"></i> Generate Chart with AI
-                    </button>
-                </div>
-                
-                <!-- Chart Results -->
-                <div id="chartResult" class="mt-4"></div>
-                
-                <!-- Insights Panel -->
-                <div id="insightsPanel" class="mt-4" style="display: none;">
-                    <div class="card border-info">
-                        <div class="card-header bg-info text-white">
-                            <h6 class="mb-0"><i class="fas fa-lightbulb"></i> AI Insights</h6>
-                        </div>
-                        <div class="card-body" id="insightsContent">
-                            <!-- Insights will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-magic"></i> Chart Generator</h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label for="chartQuery" class="form-label"
+            >What would you like to visualize?</label
+          >
+          <input
+            type="text"
+            class="form-control form-control-lg"
+            id="chartQuery"
+            placeholder="Try: 'show my spending by category' or 'income vs expenses over time'"
+          />
+          <div class="form-text">
+            The AI will choose the best chart type and analyze your data
+          </div>
         </div>
-    </div>
-    
-    <div class="col-md-4">
-        <!-- Quick Examples -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Examples</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary text-start" onclick="setChartExample('show spending by category')">
-                        <i class="fas fa-chart-pie"></i> "show spending by category"
-                    </button>
-                    <button class="btn btn-outline-primary text-start" onclick="setChartExample('income vs expenses over time')">
-                        <i class="fas fa-chart-line"></i> "income vs expenses over time"
-                    </button>
-                    <button class="btn btn-outline-primary text-start" onclick="setChartExample('largest transactions this month')">
-                        <i class="fas fa-chart-bar"></i> "largest transactions this month"
-                    </button>
-                    <button class="btn btn-outline-primary text-start" onclick="setChartExample('expense trends last 3 months')">
-                        <i class="fas fa-chart-area"></i> "expense trends last 3 months"
-                    </button>
-                    <button class="btn btn-outline-primary text-start" onclick="setChartExample('compare food and shopping expenses')">
-                        <i class="fas fa-balance-scale"></i> "compare food and shopping expenses"
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Chart Types Info -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Chart Types</h6>
-            </div>
-            <div class="card-body">
-                <p><strong>LLM Chart Generator</strong> can create:</p>
-                <ul class="list-unstyled">
-                    <li><i class="fas fa-chart-pie text-primary"></i> <strong>Pie Charts:</strong> Category distributions</li>
-                    <li><i class="fas fa-chart-bar text-success"></i> <strong>Bar Charts:</strong> Comparisons and rankings</li>
-                    <li><i class="fas fa-chart-line text-warning"></i> <strong>Line Charts:</strong> Trends over time</li>
-                    <li><i class="fas fa-chart-scatter text-info"></i> <strong>Scatter Plots:</strong> Relationships between data</li>
-                </ul>
-                <p class="small text-muted">Automatically applies filters and analyzes patterns in your data.</p>
-            </div>
-        </div>
-        
-        <!-- AI Status -->
-        <div class="card mt-3">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="fas fa-robot"></i> AI Status</h6>
-            </div>
-            <div class="card-body">
-                <div id="aiStatus">
-                    <span class="badge bg-success" id="statusBadge">AI Ready</span>
-                    <small class="text-muted d-block mt-1">Powered by Gemini AI with fallback rules</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
 
-{% block scripts %}
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+          <button
+            class="btn btn-primary btn-lg"
+            onclick="generateChart()"
+            id="generateBtn"
+          >
+            <i class="fas fa-magic"></i> Generate Chart with AI
+          </button>
+        </div>
+
+        <!-- Chart Results -->
+        <div id="chartResult" class="mt-4"></div>
+
+        <!-- Insights Panel -->
+        <div id="insightsPanel" class="mt-4" style="display: none">
+          <div class="card border-info">
+            <div class="card-header bg-info text-white">
+              <h6 class="mb-0"><i class="fas fa-lightbulb"></i> AI Insights</h6>
+            </div>
+            <div class="card-body" id="insightsContent">
+              <!-- Insights will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <!-- Quick Examples -->
+    <div class="card">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-bolt"></i> Quick Examples</h6>
+      </div>
+      <div class="card-body">
+        <div class="d-grid gap-2">
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('show spending by category')"
+          >
+            <i class="fas fa-chart-pie"></i> "show spending by category"
+          </button>
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('income vs expenses over time')"
+          >
+            <i class="fas fa-chart-line"></i> "income vs expenses over time"
+          </button>
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('largest transactions this month')"
+          >
+            <i class="fas fa-chart-bar"></i> "largest transactions this month"
+          </button>
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('expense trends last 3 months')"
+          >
+            <i class="fas fa-chart-area"></i> "expense trends last 3 months"
+          </button>
+          <button
+            class="btn btn-outline-primary text-start"
+            onclick="setChartExample('compare food and shopping expenses')"
+          >
+            <i class="fas fa-balance-scale"></i> "compare food and shopping
+            expenses"
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Examples -->
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-robot"></i> Advanced AI Analysis</h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <strong>Predictive Analysis:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-primary btn-sm text-start"
+                onclick="setChartExample('predict my future spending')"
+              >
+                "predict my future spending"
+              </button>
+              <button
+                class="btn btn-outline-primary btn-sm text-start"
+                onclick="setChartExample('forecast next month expenses')"
+              >
+                "forecast next month expenses"
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <strong>Behavioral Insights:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-success btn-sm text-start"
+                onclick="setChartExample('analyze my spending habits')"
+              >
+                "analyze my spending habits"
+              </button>
+              <button
+                class="btn btn-outline-success btn-sm text-start"
+                onclick="setChartExample('show my financial behavior patterns')"
+              >
+                "show my financial behavior patterns"
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <strong>Optimization:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-info btn-sm text-start"
+                onclick="setChartExample('how can I save more money')"
+              >
+                "how can I save more money"
+              </button>
+              <button
+                class="btn btn-outline-info btn-sm text-start"
+                onclick="setChartExample('optimize my spending')"
+              >
+                "optimize my spending"
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <strong>Risk & Health:</strong>
+            <div class="d-grid gap-2 mt-2">
+              <button
+                class="btn btn-outline-warning btn-sm text-start"
+                onclick="setChartExample('assess my financial health')"
+              >
+                "assess my financial health"
+              </button>
+              <button
+                class="btn btn-outline-warning btn-sm text-start"
+                onclick="setChartExample('analyze financial risks')"
+              >
+                "analyze financial risks"
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Types Info -->
+    <div class="card mt-3">
+      <div class="card-header">
+        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Chart Types</h6>
+      </div>
+      <div class="card-body">
+        <p><strong>AI Chart Generator</strong> can create:</p>
+        <ul class="list-unstyled">
+          <li>
+            <i class="fas fa-chart-pie text-primary"></i>
+            <strong>Pie Charts:</strong> Category distributions
+          </li>
+          <li>
+            <i class="fas fa-chart-bar text-success"></i>
+            <strong>Bar Charts:</strong> Comparisons and rankings
+          </li>
+          <li>
+            <i class="fas fa-chart-line text-warning"></i>
+            <strong>Line Charts:</strong> Trends over time
+          </li>
+          <li>
+            <i class="fas fa-tachometer-alt text-info"></i>
+            <strong>Dashboards:</strong> Comprehensive overviews
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 <script>
-function setChartExample(example) {
-    document.getElementById('chartQuery').value = example;
-    document.getElementById('chartQuery').focus();
-}
+  function setChartExample(example) {
+    document.getElementById("chartQuery").value = example;
+    document.getElementById("chartQuery").focus();
+  }
 
-function generateChart() {
-    const query = document.getElementById('chartQuery').value.trim();
+  function generateChart() {
+    const query = document.getElementById("chartQuery").value.trim();
     if (!query) {
-        showAlert('Please enter a chart request', 'warning');
-        return;
+      showAlert("Please enter a chart request", "warning");
+      return;
     }
-    
-    const generateBtn = document.getElementById('generateBtn');
+
+    const generateBtn = document.getElementById("generateBtn");
     const originalText = generateBtn.innerHTML;
-    
+
     // Show loading state
-    generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    generateBtn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Generating...';
     generateBtn.disabled = true;
-    
-    const chartDiv = document.getElementById('chartResult');
-    const insightsPanel = document.getElementById('insightsPanel');
-    
+
+    const chartDiv = document.getElementById("chartResult");
+    const insightsPanel = document.getElementById("insightsPanel");
+
     chartDiv.innerHTML = `
         <div class="text-center py-4">
             <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
@@ -141,70 +245,79 @@ function generateChart() {
             </div>
         </div>
     `;
-    
+
     // Hide insights panel during loading
-    insightsPanel.style.display = 'none';
-    
-    fetch('/ai-charts', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({query: query})
+    insightsPanel.style.display = "none";
+
+    // Use the new endpoint
+    fetch("/api/ai-charts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query: query }),
     })
-    .then(response => {
+      .then((response) => {
         if (!response.ok) {
-            throw new Error('Network response was not ok');
+          throw new Error("Network response was not ok");
         }
         return response.json();
-    })
-    .then(data => {
+      })
+      .then((data) => {
         // Reset button
         generateBtn.innerHTML = originalText;
         generateBtn.disabled = false;
-        
+
         if (data.error) {
-            showAlert(data.error, 'danger');
-            chartDiv.innerHTML = '';
-            return;
+          showAlert(data.error, "danger");
+          chartDiv.innerHTML = "";
+          return;
         }
-        
+
         // Display chart and insights
         displayChartResult(data);
-    })
-    .catch(error => {
+      })
+      .catch((error) => {
         generateBtn.innerHTML = originalText;
         generateBtn.disabled = false;
-        showAlert('Chart generation failed: ' + error, 'danger');
-        chartDiv.innerHTML = '';
-    });
-}
+        showAlert("Chart generation failed: " + error, "danger");
+        chartDiv.innerHTML = "";
+      });
+  }
 
-function displayChartResult(data) {
-    const chartDiv = document.getElementById('chartResult');
-    const insightsPanel = document.getElementById('insightsPanel');
-    const insightsContent = document.getElementById('insightsContent');
-    
+  function displayChartResult(data) {
+    const chartDiv = document.getElementById("chartResult");
+    const insightsPanel = document.getElementById("insightsPanel");
+    const insightsContent = document.getElementById("insightsContent");
+
     let html = `
         <div class="card border-success">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="fas fa-chart-${getChartIcon(data.chart_type)}"></i> 
+                    <i class="fas fa-chart-${getChartIcon(
+                      data.chart_type
+                    )}"></i> 
                     ${data.title}
                 </h5>
-                <span class="badge bg-light text-dark">${data.chart_type} chart</span>
+                <span class="badge bg-light text-dark">${
+                  data.chart_type
+                } chart</span>
             </div>
             <div class="card-body">
                 <p class="text-muted">${data.analysis_notes}</p>
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <small class="text-muted">
-                            <i class="fas fa-chart-bar"></i> Type: ${data.chart_type}
+                            <i class="fas fa-chart-bar"></i> Type: ${
+                              data.chart_type
+                            }
                         </small>
                     </div>
                     <div class="col-md-6">
                         <small class="text-muted">
-                            <i class="fas fa-database"></i> Data Points: ${data.data_points}
+                            <i class="fas fa-database"></i> Data Points: ${
+                              data.data_points
+                            }
                         </small>
                     </div>
                 </div>
@@ -212,75 +325,78 @@ function displayChartResult(data) {
             </div>
         </div>
     `;
-    
+
     chartDiv.innerHTML = html;
-    
+
     // Display insights if available
     if (data.insights && data.insights.length > 0) {
-        let insightsHtml = '<ul class="list-unstyled mb-0">';
-        data.insights.forEach(insight => {
-            insightsHtml += `<li class="mb-2"><i class="fas fa-chevron-right text-primary me-2"></i> ${insight}</li>`;
-        });
-        insightsHtml += '</ul>';
-        
-        insightsContent.innerHTML = insightsHtml;
-        insightsPanel.style.display = 'block';
+      let insightsHtml = '<ul class="list-unstyled mb-0">';
+      data.insights.forEach((insight) => {
+        insightsHtml += `<li class="mb-2"><i class="fas fa-chevron-right text-primary me-2"></i> ${insight}</li>`;
+      });
+      insightsHtml += "</ul>";
+
+      insightsContent.innerHTML = insightsHtml;
+      insightsPanel.style.display = "block";
     } else {
-        insightsPanel.style.display = 'none';
+      insightsPanel.style.display = "none";
     }
-    
+
     // Render the Plotly chart
     if (data.chart_json) {
-        try {
-            const chartData = JSON.parse(data.chart_json);
-            Plotly.newPlot('generatedChart', chartData.data, chartData.layout, {
-                responsive: true,
-                displayModeBar: true,
-                displaylogo: false,
-                modeBarButtonsToRemove: ['pan2d', 'lasso2d', 'select2d']
-            });
-        } catch (e) {
-            console.error('Error rendering chart:', e);
-            document.getElementById('generatedChart').innerHTML = 
-                '<div class="alert alert-warning">Error displaying chart. Please try a different query.</div>';
-        }
+      try {
+        const chartData = JSON.parse(data.chart_json);
+        Plotly.newPlot("generatedChart", chartData.data, chartData.layout, {
+          responsive: true,
+          displayModeBar: true,
+          displaylogo: false,
+          modeBarButtonsToRemove: ["pan2d", "lasso2d", "select2d"],
+        });
+      } catch (e) {
+        console.error("Error rendering chart:", e);
+        document.getElementById("generatedChart").innerHTML =
+          '<div class="alert alert-warning">Error displaying chart. Please try a different query.</div>';
+      }
     }
-}
+  }
 
-function getChartIcon(chartType) {
+  function getChartIcon(chartType) {
     const icons = {
-        'pie': 'pie',
-        'bar': 'bar',
-        'line': 'line',
-        'scatter': 'scatter',
-        'message': 'circle'
+      advanced_timeline: "line",
+      advanced_category: "pie",
+      comprehensive_dashboard: "dashboard",
+      line: "line",
+      bar: "bar",
+      pie: "pie",
     };
-    return icons[chartType] || 'chart-line';
-}
+    return icons[chartType] || "chart-line";
+  }
 
-function showAlert(message, type) {
-    const alertDiv = document.createElement('div');
+  function showAlert(message, type) {
+    const alertDiv = document.createElement("div");
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
     alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
-    const chartDiv = document.getElementById('chartResult');
-    chartDiv.innerHTML = '';
+
+    const chartDiv = document.getElementById("chartResult");
+    chartDiv.innerHTML = "";
     chartDiv.appendChild(alertDiv);
-}
+  }
 
-// Enable Enter key
-document.getElementById('chartQuery').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+  // Enable Enter key
+  document
+    .getElementById("chartQuery")
+    .addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
         generateChart();
-    }
-});
+      }
+    });
 
-// Focus on input when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('chartQuery').focus();
-});
+  // Focus on input when page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("chartQuery").focus();
+  });
 </script>
 {% endblock %}
