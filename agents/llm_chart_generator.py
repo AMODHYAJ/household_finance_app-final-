@@ -228,20 +228,24 @@ class LLMChartGenerator:
                 start_date = end_date - timedelta(weeks=number)
                 period_name = f"{number} week{'s' if number > 1 else ''}"
             elif unit == 'months':
-                start_date = end_date - timedelta(days=number * 30)  # Approximate
+                # More accurate month calculation
+                start_date = end_date - pd.DateOffset(months=number)
                 period_name = f"{number} month{'s' if number > 1 else ''}"
             elif unit == 'years':
-                start_date = end_date - timedelta(days=number * 365)  # Approximate
+                start_date = end_date - pd.DateOffset(years=number)
                 period_name = f"{number} year{'s' if number > 1 else ''}"
             else:
                 return self._create_error_response(f"Unsupported time unit: {unit}")
             
-            # Filter data for the period
+            # Filter data for the period - FIXED: Include category data
             period_expenses = df[
                 (df['type'] == 'expense') & 
                 (df['date'] >= start_date) & 
                 (df['date'] <= end_date)
             ].copy()
+            
+            print(f"🔍 DEBUG: Found {len(period_expenses)} expenses for {period_name}")
+            print(f"🔍 DEBUG: Categories: {period_expenses['category'].unique() if not period_expenses.empty else 'None'}")
             
             if period_expenses.empty:
                 return self._create_custom_duration_error_response(df, period_name, start_date, end_date)
@@ -256,6 +260,8 @@ class LLMChartGenerator:
             
         except Exception as e:
             print(f"❌ Custom duration analysis error: {e}")
+            import traceback
+            traceback.print_exc()
             return self._create_comprehensive_fallback(df, query)
 
     def _create_short_period_analysis(self, expenses_df, query, period_name, start_date, end_date):
@@ -302,15 +308,42 @@ class LLMChartGenerator:
                 hovertemplate='Date: %{x}<br>Cumulative: $%{y:.2f}<extra></extra>'
             ), row=1, col=2)
         
-        # 3. Category breakdown
+        # 3. Category breakdown - FIXED: Proper category aggregation
         category_totals = expenses_df.groupby('category')['amount'].sum()
+        
+        # Handle case where we have categories
         if not category_totals.empty:
+            # Sort by amount and take top categories, group others as "Other"
+            category_totals_sorted = category_totals.sort_values(ascending=False)
+            
+            # If more than 6 categories, group small ones as "Other"
+            if len(category_totals_sorted) > 6:
+                top_categories = category_totals_sorted.head(5)
+                other_total = category_totals_sorted.tail(len(category_totals_sorted) - 5).sum()
+                
+                category_labels = top_categories.index.tolist() + ['Other']
+                category_values = top_categories.values.tolist() + [other_total]
+            else:
+                category_labels = category_totals_sorted.index.tolist()
+                category_values = category_totals_sorted.values.tolist()
+            
             fig.add_trace(go.Pie(
-                labels=category_totals.index,
-                values=category_totals.values,
+                labels=category_labels,
+                values=category_values,
                 name='Categories',
                 hole=0.4,
-                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>',
+                textinfo='label+percent'
+            ), row=2, col=1)
+        else:
+            # No categories found - show placeholder
+            fig.add_trace(go.Pie(
+                labels=['No Category Data'],
+                values=[1],
+                name='Categories',
+                hole=0.4,
+                marker_colors=['#95a5a6'],
+                hovertemplate='No category data available<extra></extra>'
             ), row=2, col=1)
         
         # 4. Statistics indicator
@@ -333,13 +366,20 @@ class LLMChartGenerator:
             showlegend=False
         )
         
+        # Enhanced insights with proper category data
         insights = [
             f"Total spent in {period_name}: ${total_spent:.2f}",
             f"Average daily spending: ${avg_daily:.2f}",
             f"Days with spending: {days_with_spending}/{len(dates_range)}",
             f"Highest spending day: ${full_daily_spending.max():.2f}" if not full_daily_spending.empty else "No spending data",
-            f"Top category: {category_totals.idxmax() if not category_totals.empty else 'N/A'}"
         ]
+        
+        # Add category insights if available
+        if not category_totals.empty:
+            top_category = category_totals.idxmax()
+            top_amount = category_totals.max()
+            insights.append(f"Top category: {top_category} (${top_amount:.2f})")
+            insights.append(f"Categories with spending: {len(category_totals)}")
         
         return self._create_success_response(fig, "short_period_analysis", 
                                            f"Detailed daily analysis of {period_name} spending", insights)
@@ -349,6 +389,9 @@ class LLMChartGenerator:
         # Aggregate by week
         expenses_df['week'] = expenses_df['date'].dt.to_period('W')
         weekly_spending = expenses_df.groupby('week')['amount'].sum()
+        
+        # FIXED: Proper category aggregation for medium periods
+        category_totals = expenses_df.groupby('category')['amount'].sum()
         
         fig = make_subplots(
             rows=2, cols=2,
@@ -383,28 +426,55 @@ class LLMChartGenerator:
             hovertemplate='Amount: $%{y:.2f}<extra></extra>'
         ), row=1, col=2)
         
-        # 3. Category trends over weeks
-        category_weekly = expenses_df.groupby(['week', 'category'])['amount'].sum().unstack(fill_value=0)
-        for category in category_weekly.columns:
+        # 3. Category trends over weeks - FIXED: Proper category handling
+        if not category_totals.empty:
+            # Get top 5 categories for trend analysis
+            top_categories = category_totals.nlargest(5).index
+            
+            category_weekly = expenses_df.groupby(['week', 'category'])['amount'].sum().unstack(fill_value=0)
+            
+            # Only show top categories to avoid clutter
+            colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6']
+            
+            for i, category in enumerate(top_categories):
+                if category in category_weekly.columns:
+                    fig.add_trace(go.Bar(
+                        x=category_weekly.index.astype(str),
+                        y=category_weekly[category],
+                        name=category,
+                        marker_color=colors[i % len(colors)],
+                        hovertemplate='Week: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>',
+                        showlegend=True
+                    ), row=2, col=1)
+        else:
+            # No category data - show placeholder
             fig.add_trace(go.Bar(
-                x=category_weekly.index.astype(str),
-                y=category_weekly[category],
-                name=category,
-                hovertemplate='Week: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>'
+                x=weekly_spending.index.astype(str),
+                y=[0] * len(weekly_spending),
+                name='No Category Data',
+                marker_color='#95a5a6',
+                hovertemplate='No category data available<extra></extra>'
             ), row=2, col=1)
         
-        # 4. Day of week heatmap
+        # 4. Day of week heatmap - FIXED: Proper data aggregation
         expenses_df['day_of_week'] = expenses_df['date'].dt.day_name()
         expenses_df['week_num'] = expenses_df['date'].dt.isocalendar().week
-        day_week_heatmap = expenses_df.groupby(['day_of_week', 'week_num'])['amount'].sum().unstack(fill_value=0)
+        
+        day_week_pivot = expenses_df.pivot_table(
+            values='amount', 
+            index='day_of_week', 
+            columns='week_num', 
+            aggfunc='sum', 
+            fill_value=0
+        )
         
         days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        day_week_heatmap = day_week_heatmap.reindex(days_order)
+        day_week_pivot = day_week_pivot.reindex(days_order)
         
         fig.add_trace(go.Heatmap(
-            z=day_week_heatmap.values,
-            x=day_week_heatmap.columns.astype(str),
-            y=day_week_heatmap.index,
+            z=day_week_pivot.values,
+            x=day_week_pivot.columns.astype(str),
+            y=day_week_pivot.index,
             colorscale='Viridis',
             name='Spending Heatmap',
             hovertemplate='Week: %{x}<br>Day: %{y}<br>Amount: $%{z:.2f}<extra></extra>'
@@ -425,8 +495,13 @@ class LLMChartGenerator:
             f"Average weekly spending: ${avg_weekly:.2f}",
             f"Number of weeks analyzed: {len(weekly_spending)}",
             f"Highest spending week: ${weekly_spending.max():.2f}" if not weekly_spending.empty else "No data",
-            f"Most active spending day: {expenses_df['day_of_week'].mode().iloc[0] if not expenses_df['day_of_week'].mode().empty else 'N/A'}"
         ]
+        
+        # Add category insights
+        if not category_totals.empty:
+            insights.append(f"Top category: {category_totals.idxmax()} (${category_totals.max():.2f})")
+            insights.append(f"Categories with spending: {len(category_totals)}")
+            insights.append(f"Most active spending day: {expenses_df['day_of_week'].mode().iloc[0] if not expenses_df['day_of_week'].mode().empty else 'N/A'}")
         
         return self._create_success_response(fig, "medium_period_analysis", 
                                            f"Weekly analysis of {period_name} spending patterns", insights)
@@ -436,6 +511,9 @@ class LLMChartGenerator:
         # Aggregate by month
         expenses_df['month'] = expenses_df['date'].dt.to_period('M')
         monthly_spending = expenses_df.groupby('month')['amount'].sum()
+        
+        # FIXED: Proper category aggregation
+        category_totals = expenses_df.groupby('category')['amount'].sum()
         
         fig = make_subplots(
             rows=2, cols=2,
@@ -471,25 +549,50 @@ class LLMChartGenerator:
                 hovertemplate='Month: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
             ), row=1, col=2)
         
-        # 3. Category trends over months
-        category_monthly = expenses_df.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
-        for category in category_monthly.columns[:3]:  # Show top 3 categories
+        # 3. Category trends over months - FIXED: Proper category handling
+        if not category_totals.empty:
+            # Get top 3 categories for trend analysis
+            top_categories = category_totals.nlargest(3).index
+            
+            category_monthly = expenses_df.groupby(['month', 'category'])['amount'].sum().unstack(fill_value=0)
+            
+            colors = ['#e74c3c', '#3498db', '#2ecc71']
+            
+            for i, category in enumerate(top_categories):
+                if category in category_monthly.columns:
+                    fig.add_trace(go.Scatter(
+                        x=category_monthly.index.astype(str),
+                        y=category_monthly[category],
+                        name=f'{category} Trend',
+                        mode='lines+markers',
+                        line=dict(color=colors[i % len(colors)], width=2),
+                        hovertemplate='Month: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>'
+                    ), row=2, col=1)
+        else:
+            # No category data
             fig.add_trace(go.Scatter(
-                x=category_monthly.index.astype(str),
-                y=category_monthly[category],
-                name=f'{category} Trend',
-                mode='lines+markers',
-                hovertemplate='Month: %{x}<br>Category: ' + category + '<br>Amount: $%{y:.2f}<extra></extra>'
+                x=monthly_spending.index.astype(str),
+                y=[0] * len(monthly_spending),
+                name='No Category Data',
+                mode='lines',
+                line=dict(color='#95a5a6', dash='dash'),
+                hovertemplate='No category data available<extra></extra>'
             ), row=2, col=1)
         
-        # 4. Monthly distribution
-        monthly_avg = expenses_df.groupby(expenses_df['date'].dt.month)['amount'].mean()
+        # 4. Monthly distribution - FIXED: Proper data aggregation
+        monthly_data = []
         month_names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-        monthly_avg = monthly_avg.reindex(range(1, 13), fill_value=0)
+        
+        for month_num in range(1, 13):
+            month_data = expenses_df[expenses_df['date'].dt.month == month_num]['amount'].values
+            if len(month_data) > 0:
+                monthly_data.append(month_data)
+            else:
+                monthly_data.append(np.array([0]))
         
         fig.add_trace(go.Box(
-            y=[expenses_df[expenses_df['date'].dt.month == i]['amount'].values for i in range(1, 13)],
+            y=monthly_data,
             x=month_names,
             name='Monthly Distribution',
             marker_color='#2ecc71',
@@ -513,6 +616,11 @@ class LLMChartGenerator:
             f"Overall trend: {trend_direction}",
             f"Highest spending month: ${monthly_spending.max():.2f}" if not monthly_spending.empty else "No data"
         ]
+        
+        # Add category insights
+        if not category_totals.empty:
+            insights.append(f"Top category: {category_totals.idxmax()} (${category_totals.max():.2f})")
+            insights.append(f"Total categories: {len(category_totals)}")
         
         return self._create_success_response(fig, "long_period_analysis", 
                                            f"Monthly trend analysis of {period_name} spending", insights)
@@ -611,15 +719,16 @@ class LLMChartGenerator:
                 hovertemplate='Date: %{x}<br>Cumulative: $%{y:.2f}<extra></extra>'
             ), row=1, col=2)
             
-            # 3. Category breakdown
+            # 3. Category breakdown - FIXED: Proper category handling
             category_totals = last_month_expenses.groupby('category')['amount'].sum()
-            fig.add_trace(go.Pie(
-                labels=category_totals.index,
-                values=category_totals.values,
-                name='Categories',
-                hole=0.4,
-                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
-            ), row=2, col=1)
+            if not category_totals.empty:
+                fig.add_trace(go.Pie(
+                    labels=category_totals.index,
+                    values=category_totals.values,
+                    name='Categories',
+                    hole=0.4,
+                    hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+                ), row=2, col=1)
             
             # 4. Top transactions
             top_transactions = last_month_expenses.nlargest(5, 'amount')
@@ -646,9 +755,13 @@ class LLMChartGenerator:
                 f"Total spent last month: ${total_spent:.2f}",
                 f"Average daily spending: ${avg_daily:.2f}",
                 f"Highest spending day: {max_day.strftime('%B %d')} (${daily_spending.max():.2f})",
-                f"Top category: {category_totals.idxmax()} (${category_totals.max():.2f})",
                 f"Number of transactions: {len(last_month_expenses)}"
             ]
+            
+            # Add category insights if available
+            if not category_totals.empty:
+                insights.append(f"Top category: {category_totals.idxmax()} (${category_totals.max():.2f})")
+                insights.append(f"Categories with spending: {len(category_totals)}")
             
             return self._create_success_response(fig, "last_month_analysis", 
                                                f"Detailed analysis of last month's spending", insights)
@@ -734,15 +847,16 @@ class LLMChartGenerator:
                 hovertemplate='Date: %{x}<br>Actual: $%{y:.2f}<extra></extra>'
             ), row=1, col=2)
             
-            # 3. Category breakdown
+            # 3. Category breakdown - FIXED: Proper category handling
             category_totals = this_month_expenses.groupby('category')['amount'].sum()
-            fig.add_trace(go.Pie(
-                labels=category_totals.index,
-                values=category_totals.values,
-                name='Categories',
-                hole=0.4,
-                hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
-            ), row=2, col=1)
+            if not category_totals.empty:
+                fig.add_trace(go.Pie(
+                    labels=category_totals.index,
+                    values=category_totals.values,
+                    name='Categories',
+                    hole=0.4,
+                    hovertemplate='<b>%{label}</b><br>Amount: $%{value:.2f}<br>Percentage: %{percent}<extra></extra>'
+                ), row=2, col=1)
             
             # 4. Progress indicator
             month_progress = (days_in_month / total_days_in_month) * 100
@@ -784,8 +898,12 @@ class LLMChartGenerator:
                 f"Average daily spending: ${avg_daily:.2f}",
                 f"Month progress: {days_in_month}/{total_days_in_month} days ({month_progress:.1f}%)",
                 f"Spending progress: {spending_progress:.1f}% of expected monthly total",
-                f"Top category: {category_totals.idxmax() if not category_totals.empty else 'N/A'}"
             ]
+            
+            # Add category insights if available
+            if not category_totals.empty:
+                insights.append(f"Top category: {category_totals.idxmax()}")
+                insights.append(f"Categories with spending: {len(category_totals)}")
             
             return self._create_success_response(fig, "this_month_analysis", 
                                                f"Current month spending analysis with progress tracking", insights)
@@ -938,11 +1056,6 @@ class LLMChartGenerator:
     def _create_yesterday_spending_analysis(self, df, query, depth):
         return self._create_custom_duration_analysis(df, "1 day", depth)
 
-    # Keep all existing methods from your original implementation below...
-    # (All the methods like _is_specific_expense_comparison, _create_simple_expense_comparison, 
-    # _extract_specific_categories_from_query, _create_missing_data_response, 
-    # _create_suggestion_response, _create_temporal_analysis, etc.)
-    
     def _is_specific_expense_comparison(self, query):
         """Check if query is specifically asking to compare expense categories"""
         query_lower = query.lower()
@@ -1057,72 +1170,69 @@ class LLMChartGenerator:
         print(f"📋 User's available categories: {list(available_categories)}")
         print(f"🔍 Query: '{query}'")
 
-        # More precise category mapping with exact matching
-        category_mapping = {
-            'food': ['food', 'groceries', 'restaurant', 'dining', 'eat', 'meal', 'lunch', 'dinner', 'grocery'],
-            'shopping': ['shopping', 'retail', 'store', 'amazon', 'buy', 'purchase', 'mall', 'shop'],
-            'transport': ['transport', 'transportation', 'uber', 'taxi', 'gas', 'fuel', 'bus', 'train', 'car', 'commute', 'metro', 'subway', 'lyft'],
-            'entertainment': ['entertainment', 'movie', 'netflix', 'game', 'hobby', 'fun', 'leisure', 'concert', 'music', 'streaming'],
-            'bills': ['bills', 'utilities', 'electricity', 'water', 'internet', 'phone', 'subscription', 'rent', 'mortgage', 'bill'],
-            'healthcare': ['healthcare', 'medical', 'doctor', 'hospital', 'pharmacy', 'health', 'insurance', 'dental', 'clinic'],
-            'other': ['other', 'miscellaneous', 'uncategorized']
-        }
-
         found_categories = []
         missing_categories = []
 
-        # First, try exact word matching in the query against user's actual categories
+        # Split query into words and look for exact category matches
+        query_words = set(query_lower.split())
+        
+        # Also check for comparison patterns like "food vs shopping"
+        comparison_patterns = ['vs', 'versus', 'compare', 'and', '&']
+        query_words = query_words - set(comparison_patterns)
+        
+        # First pass: direct exact matching
         for available_cat in available_categories:
             available_cat_lower = str(available_cat).lower()
-            # Check if the category name appears as a whole word in the query
-            if any(f' {word} ' in f' {query_lower} ' for word in available_cat_lower.split()):
+            if available_cat_lower in query_words:
                 if available_cat not in found_categories:
                     found_categories.append(available_cat)
                     print(f"✅ Found exact category match: {available_cat}")
 
-        # If no exact matches, use keyword mapping but be more strict
-        for category_key, keywords in category_mapping.items():
-            # Check if any keyword appears as a whole word in the query
-            if any(f' {keyword} ' in f' {query_lower} ' for keyword in keywords):
-                print(f"🔍 Found keyword match for: {category_key}")
-                # Find matching actual categories in the data
-                matching_categories = []
-                for available_cat in available_categories:
-                    available_cat_lower = str(available_cat).lower()
-                    # Check if category contains any of the keywords
-                    if any(keyword in available_cat_lower for keyword in keywords):
-                        matching_categories.append(available_cat)
-                
-                if matching_categories:
-                    for cat in matching_categories:
-                        if cat not in found_categories:
-                            found_categories.append(cat)
-                            print(f"✅ Mapped '{category_key}' to user category: {cat}")
-                else:
-                    # No matching category found in user data
-                    if category_key not in missing_categories:
-                        missing_categories.append(category_key)
-                    print(f"❌ Keyword '{category_key}' found but no data available")
+        # Second pass: check if any query word is a substring of category names (but be careful)
+        for query_word in query_words:
+            for available_cat in available_categories:
+                available_cat_lower = str(available_cat).lower()
+                # Only match if the query word is a significant part of the category name
+                # and not just a random substring match
+                if (query_word in available_cat_lower and 
+                    len(query_word) > 3 and  # Minimum length to avoid false matches
+                    available_cat not in found_categories):
+                    # Additional check: make sure it's not a partial word match like "port" in "transport"
+                    if (available_cat_lower.startswith(query_word) or 
+                        f' {query_word}' in f' {available_cat_lower}' or
+                        available_cat_lower.endswith(query_word)):
+                        found_categories.append(available_cat)
+                        print(f"✅ Found partial category match: {available_cat} for '{query_word}'")
+
+        # Third pass: use a simple keyword mapping for common variations
+        common_variations = {
+            'food': ['food', 'groceries', 'restaurant', 'dining', 'grocery'],
+            'shopping': ['shopping', 'retail', 'store', 'mall'],
+            'transport': ['transport', 'transportation', 'uber', 'taxi', 'bus', 'train', 'car'],
+            'entertainment': ['entertainment', 'movie', 'netflix', 'game', 'concert'],
+            'bills': ['bills', 'utilities', 'electricity', 'water', 'internet', 'phone'],
+            'healthcare': ['healthcare', 'medical', 'doctor', 'hospital', 'pharmacy']
+        }
+        
+        for query_word in query_words:
+            for standard_name, variations in common_variations.items():
+                if query_word in variations and standard_name in available_categories_lower:
+                    exact_match_idx = available_categories_lower.index(standard_name)
+                    exact_match = available_categories[exact_match_idx]
+                    if exact_match not in found_categories:
+                        found_categories.append(exact_match)
+                        print(f"✅ Mapped '{query_word}' to standard category: {exact_match}")
 
         print(f"🔍 DEBUG: found_categories={found_categories}, missing_categories={missing_categories}")
 
-        # CRITICAL FIX: If we have missing categories and the query is a direct comparison,
-        # we should show the error instead of falling back to top categories
+        # If it's a direct comparison query, be more strict about what we include
         comparison_words = [' vs ', ' versus ', 'compare ']
         has_comparison = any(word in query_lower for word in comparison_words)
         
-        if has_comparison and missing_categories:
-            # If it's a direct comparison and we're missing categories, show error
-            print(f"🚫 Direct comparison with missing categories: {missing_categories}")
-            return found_categories, missing_categories
+        if has_comparison and len(found_categories) < 2:
+            # For comparison queries, we need at least 2 categories
+            print(f"⚠️ Comparison query but only found {len(found_categories)} categories")
         
-        # Only fall back to top categories if no specific categories were mentioned
-        if not found_categories and not missing_categories and has_comparison:
-            top_categories = expenses_df.groupby('category')['amount'].sum().nlargest(3)
-            found_categories = top_categories.index.tolist()
-            print(f"📊 Using top categories: {found_categories}")
-            return found_categories, missing_categories
-
         print(f"📊 Final result: found={found_categories}, missing={missing_categories}")
         return found_categories, missing_categories
 
@@ -1974,3 +2084,98 @@ class LLMChartGenerator:
             'analysis_notes': 'AI analysis failed',
             'insights': []
         }
+
+    def _create_temporal_analysis(self, df, query, depth):
+        """Temporal analysis for time-based patterns"""
+        try:
+            expenses_df = df[df['type'] == 'expense']
+            
+            if expenses_df.empty:
+                return self._create_error_response("No expense data for temporal analysis")
+            
+            fig = make_subplots(
+                rows=2, cols=2,
+                subplot_titles=(
+                    'Spending Timeline',
+                    'Monthly Trends',
+                    'Daily Patterns',
+                    'Seasonal Analysis'
+                ),
+                specs=[
+                    [{"type": "scatter"}, {"type": "bar"}],
+                    [{"type": "heatmap"}, {"type": "box"}]
+                ]
+            )
+            
+            # 1. Spending timeline
+            timeline_data = expenses_df.sort_values('date')
+            fig.add_trace(go.Scatter(
+                x=timeline_data['date'],
+                y=timeline_data['amount'],
+                mode='markers',
+                name='Individual Transactions',
+                marker=dict(color='#e74c3c', size=8, opacity=0.6),
+                hovertemplate='Date: %{x}<br>Amount: $%{y:.2f}<extra></extra>'
+            ), row=1, col=1)
+            
+            # 2. Monthly trends
+            monthly_data = expenses_df.groupby(expenses_df['date'].dt.to_period('M'))['amount'].sum()
+            fig.add_trace(go.Bar(
+                x=monthly_data.index.astype(str),
+                y=monthly_data.values,
+                name='Monthly Spending',
+                marker_color='#3498db',
+                hovertemplate='Month: %{x}<br>Total: $%{y:.2f}<extra></extra>'
+            ), row=1, col=2)
+            
+            # 3. Daily patterns heatmap
+            expenses_df['day_of_week'] = expenses_df['date'].dt.day_name()
+            expenses_df['month'] = expenses_df['date'].dt.month_name()
+            
+            daily_pattern = expenses_df.groupby(['month', 'day_of_week'])['amount'].sum().unstack(fill_value=0)
+            days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            months_order = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December']
+            
+            daily_pattern = daily_pattern.reindex(months_order).reindex(columns=days_order)
+            
+            fig.add_trace(go.Heatmap(
+                z=daily_pattern.values,
+                x=daily_pattern.columns,
+                y=daily_pattern.index,
+                colorscale='Viridis',
+                name='Daily Patterns',
+                hovertemplate='Month: %{y}<br>Day: %{x}<br>Amount: $%{z:.2f}<extra></extra>'
+            ), row=2, col=1)
+            
+            # 4. Seasonal analysis
+            monthly_avg = expenses_df.groupby(expenses_df['date'].dt.month)['amount'].mean()
+            monthly_avg = monthly_avg.reindex(range(1, 13), fill_value=0)
+            
+            fig.add_trace(go.Box(
+                y=[expenses_df[expenses_df['date'].dt.month == i]['amount'].values for i in range(1, 13)],
+                x=['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                name='Monthly Distribution',
+                marker_color='#2ecc71',
+                hovertemplate='Month: %{x}<extra></extra>'
+            ), row=2, col=2)
+            
+            fig.update_layout(
+                height=700,
+                title_text=f"⏰ AI Temporal Analysis: {query}",
+                showlegend=False
+            )
+            
+            temporal_insights = [
+                f"Total transactions analyzed: {len(expenses_df)}",
+                f"Date range: {expenses_df['date'].min().strftime('%Y-%m-%d')} to {expenses_df['date'].max().strftime('%Y-%m-%d')}",
+                f"Average monthly spending: ${monthly_data.mean():.2f}",
+                f"Most active spending month: {monthly_data.idxmax().strftime('%B %Y') if not monthly_data.empty else 'N/A'}"
+            ]
+            
+            return self._create_success_response(fig, "temporal_analysis", 
+                                               f"AI-powered temporal spending pattern analysis", temporal_insights)
+            
+        except Exception as e:
+            print(f"❌ Temporal analysis error: {e}")
+            return self._create_comprehensive_fallback(df, query)
